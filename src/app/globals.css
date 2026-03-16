@@ -1,26 +1,147 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-ember: #FF8C42;
+  --color-spark: #FFD166;
+  --color-heart: #FF6B8A;
+  --color-brave: #5DADE2;
+  --color-forest: #7FB069;
+  --color-dream: #9B72CF;
+  --color-cream: #FFF8E7;
+  --color-night: #1A1428;
+  --color-text: #3D2C1E;
+  --color-text-light: #7A6B5D;
+  --color-text-muted: #A89B8C;
+  --font-display: 'Fredoka', 'Nunito', system-ui, sans-serif;
+  --font-body: 'Nunito', system-ui, sans-serif;
+  --font-sans: 'Nunito', system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: #FFF8E7;
+    color: #3D2C1E;
+    font-family: 'Nunito', system-ui, sans-serif;
+    line-height: 1.75;
+    font-size: 16px;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Fredoka', 'Nunito', system-ui, sans-serif;
+    line-height: 1.2;
+  }
+
+  ::selection {
+    background: rgba(255, 209, 102, 0.4);
+    color: #3D2C1E;
+  }
+
+  :focus-visible {
+    outline: 3px solid #FF8C42;
+    outline-offset: 2px;
+    border-radius: 8px;
+  }
+
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: #FFF8E7; }
+  ::-webkit-scrollbar-thumb { background: #FFD166; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #FF8C42; }
+}
+
+@layer components {
+  .font-display { font-family: 'Fredoka', 'Nunito', system-ui, sans-serif; }
+  .font-body { font-family: 'Nunito', system-ui, sans-serif; }
+
+  .spark-card {
+    background: white;
+    border: 2px solid rgba(255, 209, 102, 0.3);
+    border-radius: 1.25rem;
+    transition: all 0.3s ease;
+  }
+  .spark-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(255, 140, 66, 0.15);
+    border-color: rgba(255, 140, 66, 0.4);
+  }
+
+  .btn-spark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.75rem;
+    font-family: 'Fredoka', 'Nunito', sans-serif;
+    font-weight: 600;
+    font-size: 1rem;
+    border-radius: 9999px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: none;
+  }
+  .btn-spark:hover {
+    transform: scale(1.03);
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #FF8C42, #FF6B8A);
+    color: white;
+    box-shadow: 0 4px 16px rgba(255, 140, 66, 0.3);
+  }
+  .btn-primary:hover {
+    box-shadow: 0 6px 24px rgba(255, 140, 66, 0.4);
+  }
+
+  .btn-secondary {
+    background: white;
+    color: #FF8C42;
+    border: 2px solid #FF8C42;
+  }
+  .btn-secondary:hover {
+    background: #FFF0E0;
+  }
+
+  .night-mode {
+    background: #1A1428;
+    color: #E8D8C8;
+  }
+  .night-mode h1, .night-mode h2, .night-mode h3, .night-mode h4 {
+    color: #FFD166;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@keyframes sparkle {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(255, 209, 102, 0.3); }
+  50% { box-shadow: 0 0 24px rgba(255, 209, 102, 0.6); }
+}
+@keyframes bloom {
+  0% { opacity: 0; transform: scale(0.5); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media print {
+  nav, footer, .no-print { display: none !important; }
+  body { background: white; color: black; font-size: 14px; }
 }
