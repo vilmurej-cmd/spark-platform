@@ -1,10 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Ember, { BottomNav } from '@/components/Ember';
-import { BRAVE_LANDS, type BraveWorldLand } from '@/lib/spark-data';
+import { BRAVE_LANDS, getLandCompletionPercent, getProfile, type BraveWorldLand } from '@/lib/spark-data';
+
+// Lazy-load the PixiJS game to avoid loading it on the map view
+const BraveWorldGame = lazy(() => import('@/components/game/BraveWorldGame'));
 
 /* ---- Land positions on the fantasy map ---- */
 const LAND_POSITIONS: Record<string, { top: string; left: string }> = {
@@ -23,21 +26,35 @@ const LAND_POSITIONS: Record<string, { top: string; left: string }> = {
 };
 
 export default function WorldPage() {
-  const [mode, setMode] = useState<'map' | 'land'>('map');
+  const [mode, setMode] = useState<'map' | 'game' | 'land'>('map');
   const [activeLand, setActiveLand] = useState<BraveWorldLand | null>(null);
   const [hotspot, setHotspot] = useState<string | null>(null);
+  const [gameHotspot, setGameHotspot] = useState<{ type: string; landId: string } | null>(null);
+
+  const profile = typeof window !== 'undefined' ? getProfile() : null;
+  const collectedSparkles = profile?.collectedSparkles || [];
 
   const enterLand = (land: BraveWorldLand) => {
     setActiveLand(land);
-    setMode('land');
+    setMode('game'); // Try PixiJS game first
     setHotspot(null);
+    setGameHotspot(null);
   };
 
   const backToMap = () => {
     setMode('map');
     setActiveLand(null);
     setHotspot(null);
+    setGameHotspot(null);
   };
+
+  const handleGameHotspot = useCallback((type: string, landId: string) => {
+    setGameHotspot({ type, landId });
+  }, []);
+
+  const handleFallbackToCSS = useCallback(() => {
+    setMode('land');
+  }, []);
 
   /* ======== MAP MODE — Full-screen fantasy world ======== */
   if (mode === 'map') {
@@ -136,9 +153,10 @@ export default function WorldPage() {
             <div key={`flower-${i}`} className="absolute w-2 h-2 rounded-full" style={{ left: f.left, bottom: f.bottom, background: f.color, opacity: 0.7 }} />
           ))}
 
-          {/* ---- LAND MARKERS — Illustrated, full names ---- */}
+          {/* ---- LAND MARKERS — Illustrated, full names, completion % ---- */}
           {BRAVE_LANDS.map((land, i) => {
             const pos = LAND_POSITIONS[land.id] || { top: '50%', left: '50%' };
+            const completion = getLandCompletionPercent(land.id, collectedSparkles);
             return (
               <motion.button
                 key={land.id}
@@ -152,6 +170,11 @@ export default function WorldPage() {
               >
                 <div className="relative">
                   <LandIllustration landId={land.id} colors={land.colors} />
+                  {completion > 0 && (
+                    <div className="absolute -top-1 -right-1 bg-spark text-night rounded-full w-5 h-5 flex items-center justify-center">
+                      <span className="font-display text-[7px] font-bold">{completion}%</span>
+                    </div>
+                  )}
                 </div>
                 <span className="font-display text-[10px] md:text-xs font-bold text-white px-2 py-0.5 rounded-full mt-1 whitespace-nowrap"
                   style={{
@@ -169,7 +192,114 @@ export default function WorldPage() {
     );
   }
 
-  /* ======== LAND MODE — Full-screen immersive environment ======== */
+  /* ======== GAME MODE — PixiJS explorable world ======== */
+  if (mode === 'game' && activeLand) {
+    return (
+      <div className="min-h-screen">
+        <Suspense fallback={
+          <div className="min-h-screen flex items-center justify-center bg-night">
+            <div className="text-center">
+              <motion.div className="text-5xl mb-4" animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 1.5, repeat: Infinity }}>
+                {activeLand.emoji}
+              </motion.div>
+              <p className="font-display text-lg text-spark">Loading {activeLand.name}...</p>
+            </div>
+          </div>
+        }>
+          <BraveWorldGame
+            landId={activeLand.id}
+            onBack={backToMap}
+            onOpenHotspot={handleGameHotspot}
+          />
+        </Suspense>
+
+        {/* Game hotspot modal overlay */}
+        <AnimatePresence>
+          {gameHotspot && (
+            <motion.div
+              className="fixed inset-0 z-40 flex items-center justify-center p-6 bg-black/50"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setGameHotspot(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: -10 }}
+                className="bg-white/95 backdrop-blur-lg rounded-3xl p-6 max-w-md w-full shadow-2xl max-h-[80vh] overflow-y-auto"
+                onClick={e => e.stopPropagation()}
+              >
+                {gameHotspot.type === 'play' && (
+                  <>
+                    <h3 className="font-display font-bold text-lg mb-3" style={{ color: activeLand.colors[0] }}>
+                      🎮 Play
+                    </h3>
+                    <p className="font-body text-sm text-text mb-4">Ready to play a game in {activeLand.name}?</p>
+                    <a href="/games" className="btn-spark btn-primary w-full text-center block">Go to Games</a>
+                  </>
+                )}
+                {gameHotspot.type === 'story' && (
+                  <>
+                    <h3 className="font-display font-bold text-lg mb-3" style={{ color: activeLand.colors[0] }}>
+                      📖 Story Corner
+                    </h3>
+                    {activeLand.funFacts.map((fact, fi) => (
+                      <div key={fi} className="flex items-start gap-2 mb-3">
+                        <span className="text-spark mt-0.5 flex-shrink-0">✨</span>
+                        <p className="font-body text-sm text-text">{fact}</p>
+                      </div>
+                    ))}
+                  </>
+                )}
+                {gameHotspot.type === 'heroes' && (
+                  <>
+                    <h3 className="font-display font-bold text-lg mb-3" style={{ color: activeLand.colors[1] }}>
+                      🌟 Famous Heroes
+                    </h3>
+                    {activeLand.famousPeople.length > 0 ? (
+                      <div className="flex gap-2 flex-wrap">
+                        {activeLand.famousPeople.map(person => (
+                          <span key={person} className="px-4 py-2 rounded-full font-display text-sm font-bold shadow-sm"
+                            style={{ background: `${activeLand.colors[0]}22`, color: activeLand.colors[0], border: `2px solid ${activeLand.colors[0]}44` }}>
+                            🌟 {person}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="font-body text-sm text-text-muted italic">Every kid with {activeLand.condition.toLowerCase()} is a hero — including YOU!</p>
+                    )}
+                  </>
+                )}
+                {gameHotspot.type === 'tool' && (
+                  <>
+                    <h3 className="font-display font-bold text-lg mb-2" style={{ color: activeLand.colors[0] }}>
+                      🔧 Power Tool
+                    </h3>
+                    <div className="flex items-center gap-3 p-4 rounded-2xl"
+                      style={{ background: `linear-gradient(135deg, ${activeLand.colors[0]}22, ${activeLand.colors[1]}22)` }}>
+                      <span className="text-4xl">⚔️</span>
+                      <div>
+                        <p className="font-display font-bold text-lg" style={{ color: activeLand.colors[0] }}>{activeLand.toolName}</p>
+                        <p className="font-body text-sm text-text-muted">The magical tool of {activeLand.name}</p>
+                      </div>
+                    </div>
+                  </>
+                )}
+                <button onClick={() => setGameHotspot(null)} className="mt-4 w-full text-center font-display text-sm text-text-muted hover:text-ember transition-colors py-2">
+                  Close
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <BottomNav />
+      </div>
+    );
+  }
+
+  /* ======== LAND MODE — CSS fallback immersive environment ======== */
   if (!activeLand) return null;
 
   return (
