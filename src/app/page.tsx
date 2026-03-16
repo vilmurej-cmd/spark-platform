@@ -128,6 +128,8 @@ export default function HomePage() {
   }, []);
 
   const handleOathIntroTap = () => {
+    if (introIdx === 0) SFXEngine.oathSparkAppear();
+    SFXEngine.oathIntroTap(introIdx);
     if (introIdx < OATH_INTRO_LINES.length - 1) {
       setIntroIdx((i) => i + 1);
     } else {
@@ -160,8 +162,9 @@ export default function HomePage() {
   const handleOathTap = () => {
     if (oathLineIdx < oathLines.length - 1) {
       setOathLineIdx((i) => i + 1);
-      SFXEngine.oathReveal();
+      SFXEngine.oathReveal(oathLineIdx + 1);
     } else {
+      SFXEngine.oathReveal(7); // final "HERO" line — full musical climax
       const newProfile: SparkProfile = {
         name: childName.trim(),
         age: childAge || 7,

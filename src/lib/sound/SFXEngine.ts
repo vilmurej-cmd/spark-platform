@@ -133,15 +133,115 @@ const SFXEngine = {
     setTimeout(() => bell.dispose(), 1000);
   },
 
-  /** Oath line reveal — deep resonant bell */
-  oathReveal() {
+  /** Oath spark appearance — singing bowl bell */
+  oathSparkAppear() {
     if (!guard()) return;
-    const s = new Tone.MetalSynth({
-      envelope: { attack: 0.01, decay: 1.5, release: 1 },
-      harmonicity: 5.1, modulationIndex: 16, resonance: 4000, volume: -15,
+    const bell = new Tone.MetalSynth({
+      envelope: { attack: 0.01, decay: 3, release: 1.5 },
+      harmonicity: 12, modulationIndex: 8, resonance: 3000, volume: -12,
     }).toDestination();
-    s.triggerAttackRelease('8n', Tone.now());
-    setTimeout(() => s.dispose(), 3000);
+    bell.triggerAttackRelease('4n', Tone.now());
+    setTimeout(() => bell.dispose(), 5000);
+  },
+
+  /** Oath intro line tap — ascending piano notes */
+  oathIntroTap(lineIndex: number) {
+    if (!guard()) return;
+    const notes = ['C4', 'D4', 'E4', 'F4', 'G4'];
+    const note = notes[Math.min(lineIndex, notes.length - 1)];
+    const s = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.05, decay: 0.3, sustain: 0.2, release: 0.6 }, volume: -10 }).toDestination();
+    s.triggerAttackRelease(note, '8n');
+    setTimeout(() => s.dispose(), 1500);
+  },
+
+  /** Oath line reveal — builds the Spark Motif G-C-E-G progressively.
+   *  lineIndex 0-7 maps to increasing musical intensity. */
+  oathReveal(lineIndex = 0) {
+    if (!guard()) return;
+    // Bell strike (deeper = later lines, by adjusting decay)
+    const bell = new Tone.MetalSynth({
+      envelope: { attack: 0.01, decay: 1.5 + lineIndex * 0.2, release: 1 },
+      harmonicity: 5.1, modulationIndex: 16, resonance: 4000, volume: -14 + lineIndex,
+    }).toDestination();
+    bell.triggerAttackRelease('8n', Tone.now());
+    setTimeout(() => bell.dispose(), 4000);
+
+    // Build the Spark Motif note by note: G4, C5, E5, G5
+    const motifNotes = ['G4', 'C5', 'E5', 'G5'];
+    const motifSynth = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.08, decay: 0.4, sustain: 0.5, release: 1.0 }, volume: -8 }).toDestination();
+
+    if (lineIndex === 0) {
+      // Line 1 "I am [Name]": just G4
+      motifSynth.triggerAttackRelease('G4', '2n', Tone.now() + 0.2);
+    } else if (lineIndex === 1) {
+      // Line 2 "I am brave": G4 → C5
+      motifSynth.triggerAttackRelease('G4', '4n', Tone.now() + 0.2);
+      motifSynth.triggerAttackRelease('C5', '2n', Tone.now() + 0.8);
+    } else if (lineIndex === 2) {
+      // Line 3 "I am strong": G4 → C5 → E5
+      motifSynth.triggerAttackRelease('G4', '4n', Tone.now() + 0.15);
+      motifSynth.triggerAttackRelease('C5', '4n', Tone.now() + 0.6);
+      motifSynth.triggerAttackRelease('E5', '2n', Tone.now() + 1.05);
+    } else if (lineIndex === 3) {
+      // Line 4 "I am exactly who I'm supposed to be": G4 → C5 → E5 sustained
+      motifSynth.triggerAttackRelease('G4', '4n', Tone.now() + 0.15);
+      motifSynth.triggerAttackRelease('C5', '4n', Tone.now() + 0.6);
+      motifSynth.triggerAttackRelease('E5', '1n', Tone.now() + 1.05);
+    } else if (lineIndex === 4) {
+      // Line 5 "MIGHTY": FULL MOTIF completes! G4 → C5 → E5 → G5
+      ['G4', 'C5', 'E5', 'G5'].forEach((n, i) => {
+        motifSynth.triggerAttackRelease(n, '4n', Tone.now() + 0.15 + i * 0.4);
+      });
+      // Add pad swell
+      const pad = new Tone.PolySynth(Tone.Synth, { volume: -14 }).toDestination();
+      pad.triggerAttackRelease(['C3', 'E3', 'G3'], '1n', Tone.now() + 0.5);
+      setTimeout(() => pad.dispose(), 4000);
+    } else if (lineIndex === 5) {
+      // Line 6 "SUPERPOWER": motif DOUBLE SPEED
+      ['G4', 'C5', 'E5', 'G5'].forEach((n, i) => {
+        motifSynth.triggerAttackRelease(n, '8n', Tone.now() + 0.1 + i * 0.2);
+      });
+      // Drum enters
+      const drum = new Tone.MembraneSynth({ volume: -16 }).toDestination();
+      drum.triggerAttackRelease('C2', '4n', Tone.now() + 0.1);
+      setTimeout(() => drum.dispose(), 2000);
+    } else if (lineIndex === 6) {
+      // Line 7 "I am not alone": full chord opens up
+      const pad = new Tone.PolySynth(Tone.Synth, { volume: -10 }).toDestination();
+      pad.triggerAttackRelease(['C3', 'E3', 'G3', 'C4', 'E4', 'G4'], '1n', Tone.now() + 0.2);
+      // Sparkle cascade
+      const sparkle = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.1 }, volume: -10 }).toDestination();
+      ['E5', 'G5', 'C6', 'E6'].forEach((n, i) => {
+        sparkle.triggerAttackRelease(n, '16n', Tone.now() + 0.4 + i * 0.12);
+      });
+      setTimeout(() => { pad.dispose(); sparkle.dispose(); }, 5000);
+    } else if (lineIndex >= 7) {
+      // FINAL LINE "I am a HERO": EVERYTHING
+      // Full motif FORTISSIMO to C6
+      const heroSynth = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.05, decay: 0.3, sustain: 0.6, release: 1.0 }, volume: -4 }).toDestination();
+      ['G4', 'C5', 'E5', 'G5', 'C6'].forEach((n, i) => {
+        heroSynth.triggerAttackRelease(n, '4n', Tone.now() + 0.1 + i * 0.25);
+      });
+      // Thundering bass
+      const bass = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.05, decay: 0.5, sustain: 0.8, release: 1.5 }, volume: -6 }).toDestination();
+      bass.triggerAttackRelease('C2', '1n', Tone.now() + 0.1);
+      // Full chord across 4 octaves
+      const pad = new Tone.PolySynth(Tone.Synth, { volume: -8 }).toDestination();
+      pad.triggerAttackRelease(['C2', 'C3', 'E3', 'G3', 'C4', 'E4', 'G4', 'C5'], '1n', Tone.now() + 0.3);
+      // Ascending scale run
+      const run = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.05 }, volume: -8 }).toDestination();
+      const scale = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5', 'F5', 'G5', 'A5', 'B5', 'C6'];
+      scale.forEach((n, i) => {
+        run.triggerAttackRelease(n, '32n', Tone.now() + 1.5 + i * 0.07);
+      });
+      // Sparkle explosion
+      const sparkle = new Tone.MetalSynth({ envelope: { attack: 0.001, decay: 0.3, release: 0.2 }, volume: -14 }).toDestination();
+      for (let i = 0; i < 10; i++) {
+        sparkle.triggerAttackRelease('32n', Tone.now() + 2.5 + i * 0.06);
+      }
+      setTimeout(() => { heroSynth.dispose(); bass.dispose(); pad.dispose(); run.dispose(); sparkle.dispose(); }, 6000);
+    }
+    setTimeout(() => motifSynth.dispose(), 5000);
   },
 
   /** Ember happy chirps */
