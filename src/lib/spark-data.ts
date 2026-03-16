@@ -15,6 +15,17 @@ export interface SparkProfile {
   oathTaken: boolean;
   createdAt: string;
   parentPin?: string;
+  // Engagement fields
+  sparkCoins: number;
+  xp: number;
+  level: number;
+  loginStreak: number;
+  lastLoginDate: string; // YYYY-MM-DD
+  collectedSparkles: string[];
+  exploredLands: string[];
+  unlockedCosmetics: string[];
+  landCollectibles: Record<string, string[]>; // landId -> collected item ids
+  nextStoryUnlockDate?: string; // ISO date
 }
 
 export interface AvatarConfig {
@@ -26,6 +37,10 @@ export interface AvatarConfig {
   powerTool: string;
   capeColor: string;
   companionType: string;
+  capePattern?: string;
+  companionAccessory?: string;
+  powerToolSkin?: string;
+  landscapeDecoration?: string;
 }
 
 /* ---- Storybook Types ---- */
@@ -91,7 +106,299 @@ export const ALL_BADGES: Badge[] = [
   // Milestone
   { id: 'one-week', name: 'One Week Brave', description: 'Active for one week.', category: 'milestone', emoji: '📅' },
   { id: 'one-month', name: 'One Month Mighty', description: 'Active for one month.', category: 'milestone', emoji: '🗓️' },
+  // Engagement badges
+  { id: 'weekly-hero', name: 'Weekly Hero', description: 'Logged in 7 days in a row!', category: 'milestone', emoji: '🔥' },
+  { id: 'unstoppable', name: 'Unstoppable', description: '30 days in a row. You are a force of nature.', category: 'milestone', emoji: '💫' },
+  { id: 'sparkle-hunter', name: 'Sparkle Hunter', description: 'Found EVERY hidden sparkle in SPARK!', category: 'milestone', emoji: '🌟' },
+  { id: 'land-master-dragons-breath', name: "Dragon's Breath Master", description: "Found all sparkles in Dragon's Breath Valley!", category: 'game', emoji: '🐉' },
+  { id: 'land-master-sugar-crystals', name: 'Crystal Cave Master', description: 'Found all sparkles in Sugar Crystal Caves!', category: 'game', emoji: '💎' },
+  { id: 'land-master-thunder-wheels', name: 'Speedway Master', description: 'Found all sparkles in Thunder Wheel Speedway!', category: 'game', emoji: '⚡' },
+  { id: 'land-master-quiet-forest', name: 'Forest Master', description: 'Found all sparkles in The Quiet Forest!', category: 'game', emoji: '🌿' },
+  { id: 'volume-5', name: 'Origin Story', description: 'Read 5 story volumes — your epic saga!', category: 'story', emoji: '📕' },
+  { id: 'volume-10', name: "Hero's Return", description: '10 story volumes — a true legend!', category: 'story', emoji: '📗' },
 ];
+
+/* ---- Hero Level System ---- */
+export interface HeroLevel {
+  level: number;
+  xpRequired: number;
+  title: string;
+  unlock?: string;
+}
+
+export const HERO_LEVELS: HeroLevel[] = [
+  { level: 1, xpRequired: 0, title: 'New Hero' },
+  { level: 2, xpRequired: 100, title: 'Brave Beginner' },
+  { level: 3, xpRequired: 250, title: 'Spark Seeker' },
+  { level: 4, xpRequired: 500, title: 'Adventure Starter' },
+  { level: 5, xpRequired: 800, title: 'Brave Explorer', unlock: 'Gold cape border' },
+  { level: 6, xpRequired: 1200, title: 'Story Keeper' },
+  { level: 7, xpRequired: 1700, title: 'Dragon Friend' },
+  { level: 8, xpRequired: 2300, title: 'World Walker' },
+  { level: 9, xpRequired: 3000, title: 'Badge Master' },
+  { level: 10, xpRequired: 4000, title: 'SPARK Champion', unlock: 'Crown accessory' },
+  { level: 11, xpRequired: 5000, title: 'Elite Hero I' },
+  { level: 12, xpRequired: 6000, title: 'Elite Hero II' },
+  { level: 13, xpRequired: 7200, title: 'Elite Hero III' },
+  { level: 14, xpRequired: 8500, title: 'Elite Hero IV' },
+  { level: 15, xpRequired: 10000, title: 'Elite Hero V' },
+  { level: 16, xpRequired: 12000, title: 'Legendary Hero I' },
+  { level: 17, xpRequired: 14500, title: 'Legendary Hero II' },
+  { level: 18, xpRequired: 17000, title: 'Legendary Hero III' },
+  { level: 19, xpRequired: 20000, title: 'Legendary Hero IV' },
+  { level: 20, xpRequired: 25000, title: 'SPARK Legend', unlock: 'Rainbow particle trail' },
+];
+
+export function getLevelForXP(xp: number): HeroLevel {
+  for (let i = HERO_LEVELS.length - 1; i >= 0; i--) {
+    if (xp >= HERO_LEVELS[i].xpRequired) return HERO_LEVELS[i];
+  }
+  return HERO_LEVELS[0];
+}
+
+export function getNextLevel(currentLevel: number): HeroLevel | null {
+  const idx = HERO_LEVELS.findIndex(l => l.level === currentLevel);
+  if (idx < 0 || idx >= HERO_LEVELS.length - 1) return null;
+  return HERO_LEVELS[idx + 1];
+}
+
+export function getXPProgress(xp: number): { current: number; needed: number; percent: number } {
+  const level = getLevelForXP(xp);
+  const next = getNextLevel(level.level);
+  if (!next) return { current: xp, needed: xp, percent: 100 };
+  const currentInLevel = xp - level.xpRequired;
+  const needed = next.xpRequired - level.xpRequired;
+  return { current: currentInLevel, needed, percent: Math.min(100, (currentInLevel / needed) * 100) };
+}
+
+/* ---- XP Awards ---- */
+export const XP_AWARDS = {
+  OATH: 100,
+  READ_STORY: 50,
+  COMPLETE_GAME: 25,
+  EARN_BADGE: 75,
+  WRITE_LETTER: 30,
+  DAILY_LOGIN: 10,
+  EXPLORE_LAND: 20,
+  COLLECT_SPARKLE: 5,
+} as const;
+
+/* ---- Daily Rewards ---- */
+export interface DailyReward {
+  day: number; // 1-7
+  type: 'coins' | 'fact' | 'joke' | 'message';
+  amount?: number; // for coins
+  description: string;
+  emoji: string;
+}
+
+export const DAILY_REWARDS: DailyReward[] = [
+  { day: 1, type: 'coins', amount: 5, description: '5 Spark Coins', emoji: '🪙' },
+  { day: 2, type: 'fact', description: 'A new fun fact unlocked!', emoji: '🧠' },
+  { day: 3, type: 'coins', amount: 10, description: '10 Spark Coins', emoji: '🪙' },
+  { day: 4, type: 'joke', description: 'A new joke unlocked!', emoji: '😄' },
+  { day: 5, type: 'coins', amount: 15, description: '15 Spark Coins', emoji: '🪙' },
+  { day: 6, type: 'message', description: 'A special Ember message!', emoji: '🦊' },
+  { day: 7, type: 'coins', amount: 25, description: '25 Spark Coins + Weekly Hero badge!', emoji: '🏆' },
+];
+
+export const SPECIAL_EMBER_MESSAGES = [
+  "I've been watching you grow, {name}. Every single day you show up, you prove something — that bravery isn't something you find. It's something you ARE.",
+  "Hey {name}, did you know foxes remember the people who are kind to them? I'll never forget you. Keep shining.",
+  "{name}, some days are harder than others. But you know what? You've never once given up. That makes you my hero.",
+  "I asked every creature in the Brave World who the bravest kid is. They ALL said your name, {name}.",
+  "You want to know a secret, {name}? The Spark inside you? It's getting brighter every day. I can feel it from here.",
+];
+
+export function getTodayDateString(): string {
+  return new Date().toISOString().split('T')[0];
+}
+
+export function getDailyReward(streak: number): DailyReward {
+  const dayInCycle = ((streak - 1) % 7) + 1;
+  const reward = DAILY_REWARDS.find(r => r.day === dayInCycle) || DAILY_REWARDS[0];
+  // Double rewards after 7 consecutive days
+  if (streak > 7 && reward.type === 'coins' && reward.amount) {
+    return { ...reward, amount: reward.amount * 2, description: `${reward.amount * 2} Spark Coins (doubled!)` };
+  }
+  return reward;
+}
+
+/* ---- Spark Shop ---- */
+export interface ShopItem {
+  id: string;
+  name: string;
+  description: string;
+  cost: number;
+  category: 'cape' | 'companion' | 'decoration' | 'tool';
+  emoji: string;
+}
+
+export const SHOP_ITEMS: ShopItem[] = [
+  // Cape patterns
+  { id: 'cape-starfield', name: 'Starfield Cape', description: 'A cape covered in twinkling stars', cost: 50, category: 'cape', emoji: '🌌' },
+  { id: 'cape-flames', name: 'Flame Cape', description: 'A cape with dancing flames', cost: 50, category: 'cape', emoji: '🔥' },
+  { id: 'cape-hearts', name: 'Heart Cape', description: 'A cape covered in hearts', cost: 50, category: 'cape', emoji: '💕' },
+  { id: 'cape-rainbow', name: 'Rainbow Cape', description: 'A cape with all the colors', cost: 50, category: 'cape', emoji: '🌈' },
+  // Companion accessories
+  { id: 'comp-hat', name: 'Tiny Hat', description: 'A tiny hat for your companion', cost: 30, category: 'companion', emoji: '🎩' },
+  { id: 'comp-cape', name: 'Tiny Cape', description: 'A tiny cape for your companion', cost: 30, category: 'companion', emoji: '🦸' },
+  { id: 'comp-bow', name: 'Tiny Bow', description: 'A cute bow for your companion', cost: 30, category: 'companion', emoji: '🎀' },
+  // Landscape decorations
+  { id: 'deco-rainbow', name: 'Home Rainbow', description: 'A rainbow over your home landscape', cost: 40, category: 'decoration', emoji: '🌈' },
+  { id: 'deco-flowers', name: 'Extra Flowers', description: 'More flowers in your landscape', cost: 40, category: 'decoration', emoji: '🌸' },
+  { id: 'deco-treehouse', name: 'Treehouse Flag', description: 'A tiny treehouse in your landscape', cost: 40, category: 'decoration', emoji: '🏴' },
+  // Power tool skins
+  { id: 'tool-galaxy', name: 'Galaxy Inhaler', description: 'A cosmic inhaler skin', cost: 75, category: 'tool', emoji: '🌌' },
+  { id: 'tool-crystal', name: 'Crystal Pump', description: 'A crystal insulin pump skin', cost: 75, category: 'tool', emoji: '💎' },
+  { id: 'tool-neon', name: 'Neon Hearing Aids', description: 'Glowing neon hearing aids', cost: 75, category: 'tool', emoji: '🟢' },
+];
+
+/* ---- Sparkle Collectibles ---- */
+export interface SparkleLocation {
+  id: string;
+  landId: string;
+  x: number;
+  y: number;
+  hint: string;
+  requiresAction?: string; // e.g. "play-breathing" — sparkle only visible after this
+}
+
+export const SPARKLE_LOCATIONS: SparkleLocation[] = [
+  // Dragon's Breath Valley (5)
+  { id: 'dragon-1', landId: 'dragons-breath', x: 200, y: 100, hint: 'Behind the first mountain' },
+  { id: 'dragon-2', landId: 'dragons-breath', x: 800, y: 600, hint: 'Near a flower on the ground' },
+  { id: 'dragon-3', landId: 'dragons-breath', x: 1600, y: 50, hint: 'Floating high up' },
+  { id: 'dragon-4', landId: 'dragons-breath', x: 2400, y: 650, hint: 'Inside the Dragon\'s Den', requiresAction: 'play-breathing' },
+  { id: 'dragon-5', landId: 'dragons-breath', x: 3600, y: 200, hint: 'At the far overlook' },
+  // Sugar Crystal Caves (5)
+  { id: 'crystal-1', landId: 'sugar-crystals', x: 300, y: 150, hint: 'Behind a crystal' },
+  { id: 'crystal-2', landId: 'sugar-crystals', x: 900, y: 500, hint: 'Deep in the cave' },
+  { id: 'crystal-3', landId: 'sugar-crystals', x: 1500, y: 80, hint: 'Near the ceiling' },
+  { id: 'crystal-4', landId: 'sugar-crystals', x: 2200, y: 600, hint: 'By the underground river', requiresAction: 'play-crystal' },
+  { id: 'crystal-5', landId: 'sugar-crystals', x: 3200, y: 300, hint: 'At the crystal throne' },
+  // Thunder Wheel Speedway (5)
+  { id: 'thunder-1', landId: 'thunder-wheels', x: 250, y: 200, hint: 'At the starting line' },
+  { id: 'thunder-2', landId: 'thunder-wheels', x: 1000, y: 400, hint: 'Behind the ramp' },
+  { id: 'thunder-3', landId: 'thunder-wheels', x: 1800, y: 100, hint: 'Above the jump' },
+  { id: 'thunder-4', landId: 'thunder-wheels', x: 2600, y: 550, hint: 'In the pit stop' },
+  { id: 'thunder-5', landId: 'thunder-wheels', x: 3400, y: 250, hint: 'At the finish line' },
+  // Quiet Forest (5)
+  { id: 'forest-1', landId: 'quiet-forest', x: 350, y: 300, hint: 'Behind the first tree' },
+  { id: 'forest-2', landId: 'quiet-forest', x: 1100, y: 450, hint: 'In the mushroom ring' },
+  { id: 'forest-3', landId: 'quiet-forest', x: 1700, y: 120, hint: 'In the canopy' },
+  { id: 'forest-4', landId: 'quiet-forest', x: 2500, y: 600, hint: 'By the stream' },
+  { id: 'forest-5', landId: 'quiet-forest', x: 3300, y: 200, hint: 'At the ancient tree' },
+  // Echo Chamber (5)
+  { id: 'echo-1', landId: 'echo-chamber', x: 280, y: 250, hint: 'Near the entrance bell' },
+  { id: 'echo-2', landId: 'echo-chamber', x: 950, y: 380, hint: 'Behind a sound wave' },
+  { id: 'echo-3', landId: 'echo-chamber', x: 1650, y: 90, hint: 'At the top of the dome' },
+  { id: 'echo-4', landId: 'echo-chamber', x: 2350, y: 520, hint: 'In the quiet corner' },
+  { id: 'echo-5', landId: 'echo-chamber', x: 3100, y: 180, hint: 'At the crystal resonator' },
+  // Spark Tower (5)
+  { id: 'spark-1', landId: 'spark-tower', x: 320, y: 200, hint: 'At the tower base' },
+  { id: 'spark-2', landId: 'spark-tower', x: 1050, y: 350, hint: 'Behind an electric arc' },
+  { id: 'spark-3', landId: 'spark-tower', x: 1750, y: 60, hint: 'Near the top of the tower' },
+  { id: 'spark-4', landId: 'spark-tower', x: 2450, y: 500, hint: 'In the generator room' },
+  { id: 'spark-5', landId: 'spark-tower', x: 3250, y: 220, hint: 'At the observation deck' },
+  // Kaleidoscope (5)
+  { id: 'kaleid-1', landId: 'kaleidoscope', x: 400, y: 180, hint: 'In the first color zone' },
+  { id: 'kaleid-2', landId: 'kaleidoscope', x: 1200, y: 420, hint: 'Behind a prism' },
+  { id: 'kaleid-3', landId: 'kaleidoscope', x: 1850, y: 100, hint: 'In the rainbow arch' },
+  { id: 'kaleid-4', landId: 'kaleidoscope', x: 2600, y: 580, hint: 'At the focus point' },
+  { id: 'kaleid-5', landId: 'kaleidoscope', x: 3500, y: 280, hint: 'At the final pattern' },
+  // Giant's Garden (5)
+  { id: 'giant-1', landId: 'giants-garden', x: 300, y: 220, hint: 'Under a giant leaf' },
+  { id: 'giant-2', landId: 'giants-garden', x: 1000, y: 500, hint: 'Inside a flower' },
+  { id: 'giant-3', landId: 'giants-garden', x: 1600, y: 80, hint: 'On a tall sunflower' },
+  { id: 'giant-4', landId: 'giants-garden', x: 2300, y: 620, hint: 'Near the garden gnome' },
+  { id: 'giant-5', landId: 'giants-garden', x: 3200, y: 300, hint: 'At the garden gate' },
+  // Shield Fortress (5)
+  { id: 'shield-1', landId: 'shield-fortress', x: 350, y: 180, hint: 'At the drawbridge' },
+  { id: 'shield-2', landId: 'shield-fortress', x: 1100, y: 400, hint: 'In the armory' },
+  { id: 'shield-3', landId: 'shield-fortress', x: 1800, y: 70, hint: 'On the battlement' },
+  { id: 'shield-4', landId: 'shield-fortress', x: 2500, y: 550, hint: 'In the courtyard' },
+  { id: 'shield-5', landId: 'shield-fortress', x: 3400, y: 250, hint: 'At the watchtower' },
+  // Brave Heart Castle (5)
+  { id: 'heart-1', landId: 'brave-heart', x: 280, y: 200, hint: 'Near the castle gate' },
+  { id: 'heart-2', landId: 'brave-heart', x: 1000, y: 450, hint: 'In the throne room' },
+  { id: 'heart-3', landId: 'brave-heart', x: 1700, y: 90, hint: 'On the highest tower' },
+  { id: 'heart-4', landId: 'brave-heart', x: 2400, y: 600, hint: 'In the garden maze' },
+  { id: 'heart-5', landId: 'brave-heart', x: 3300, y: 200, hint: 'At the sunset balcony' },
+  // Thought Weaver's Loom (5)
+  { id: 'weaver-1', landId: 'thought-weaver', x: 320, y: 250, hint: 'Near the first thread' },
+  { id: 'weaver-2', landId: 'thought-weaver', x: 1050, y: 380, hint: 'Behind a tapestry' },
+  { id: 'weaver-3', landId: 'thought-weaver', x: 1750, y: 100, hint: 'At the loom top' },
+  { id: 'weaver-4', landId: 'thought-weaver', x: 2450, y: 520, hint: 'In the calm corner' },
+  { id: 'weaver-5', landId: 'thought-weaver', x: 3250, y: 180, hint: 'At the finished tapestry' },
+  // Star Lungs Station (5)
+  { id: 'star-1', landId: 'star-lungs', x: 350, y: 200, hint: 'At the airlock' },
+  { id: 'star-2', landId: 'star-lungs', x: 1100, y: 350, hint: 'In the observation bay' },
+  { id: 'star-3', landId: 'star-lungs', x: 1800, y: 60, hint: 'Floating in zero-G' },
+  { id: 'star-4', landId: 'star-lungs', x: 2500, y: 500, hint: 'In the engine room' },
+  { id: 'star-5', landId: 'star-lungs', x: 3300, y: 220, hint: 'At the star window' },
+];
+
+export function getSparklesForLand(landId: string): SparkleLocation[] {
+  return SPARKLE_LOCATIONS.filter(s => s.landId === landId);
+}
+
+export function getLandCompletionPercent(landId: string, collected: string[]): number {
+  const total = SPARKLE_LOCATIONS.filter(s => s.landId === landId).length;
+  if (total === 0) return 0;
+  const found = SPARKLE_LOCATIONS.filter(s => s.landId === landId && collected.includes(s.id)).length;
+  return Math.round((found / total) * 100);
+}
+
+/* ---- Seasonal Events ---- */
+export interface SeasonalEvent {
+  name: string;
+  startMonth: number;
+  startDay: number;
+  endMonth: number;
+  endDay: number;
+  particleColor: string;
+  emberAccessory: string;
+  specialBadgeId?: string;
+  xpMultiplier: number;
+  description: string;
+}
+
+export const SEASONAL_EVENTS: SeasonalEvent[] = [
+  { name: 'Winter Brave', startMonth: 12, startDay: 1, endMonth: 12, endDay: 31, particleColor: '#FFFFFF', emberAccessory: '🧣', xpMultiplier: 1, description: 'Snowflakes and holiday warmth!' },
+  { name: 'Brave-o-ween', startMonth: 10, startDay: 15, endMonth: 10, endDay: 31, particleColor: '#FF8C42', emberAccessory: '🎃', xpMultiplier: 1, description: 'Friendly costumes and spooky fun!' },
+  { name: 'Brave Hearts Month', startMonth: 2, startDay: 1, endMonth: 2, endDay: 28, particleColor: '#FF6B8A', emberAccessory: '💝', xpMultiplier: 1, description: 'Extra kindness and heart!' },
+  { name: 'Autism Acceptance', startMonth: 4, startDay: 1, endMonth: 4, endDay: 30, particleColor: '#9B72CF', emberAccessory: '🧩', xpMultiplier: 1.5, description: 'Celebrating the Quiet Forest!' },
+  { name: 'Asthma Awareness', startMonth: 5, startDay: 1, endMonth: 5, endDay: 31, particleColor: '#5DADE2', emberAccessory: '🌬️', xpMultiplier: 1.5, description: "Dragon's Breath Valley featured!" },
+  { name: 'Brave Summer', startMonth: 6, startDay: 1, endMonth: 6, endDay: 30, particleColor: '#FFD166', emberAccessory: '🕶️', xpMultiplier: 1, description: 'Outdoor adventure vibes!' },
+];
+
+// Brave Week: first 7 days of every month
+export function isBraveWeek(): boolean {
+  return new Date().getDate() <= 7;
+}
+
+export function getActiveEvent(): SeasonalEvent | null {
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+  return SEASONAL_EVENTS.find(e => {
+    if (e.startMonth === e.endMonth) {
+      return month === e.startMonth && day >= e.startDay && day <= e.endDay;
+    }
+    if (month === e.startMonth) return day >= e.startDay;
+    if (month === e.endMonth) return day <= e.endDay;
+    return false;
+  }) || null;
+}
+
+export function getXPMultiplier(): number {
+  let mult = 1;
+  const event = getActiveEvent();
+  if (event) mult *= event.xpMultiplier;
+  if (isBraveWeek()) mult *= 2;
+  return mult;
+}
 
 /* ---- Brave World Lands ---- */
 export interface BraveWorldLand {
@@ -203,7 +510,19 @@ export function getProfile(): SparkProfile | null {
   if (typeof window === 'undefined') return null;
   try {
     const raw = localStorage.getItem('spark-profile');
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const profile = JSON.parse(raw) as SparkProfile;
+    // Ensure engagement fields exist (migration for existing profiles)
+    if (profile.sparkCoins === undefined) profile.sparkCoins = 0;
+    if (profile.xp === undefined) profile.xp = 0;
+    if (profile.level === undefined) profile.level = 1;
+    if (profile.loginStreak === undefined) profile.loginStreak = 0;
+    if (profile.lastLoginDate === undefined) profile.lastLoginDate = '';
+    if (profile.collectedSparkles === undefined) profile.collectedSparkles = [];
+    if (profile.exploredLands === undefined) profile.exploredLands = [];
+    if (profile.unlockedCosmetics === undefined) profile.unlockedCosmetics = [];
+    if (profile.landCollectibles === undefined) profile.landCollectibles = {};
+    return profile;
   } catch { return null; }
 }
 
@@ -217,8 +536,94 @@ export function earnBadge(badgeId: string): boolean {
   if (!profile) return false;
   if (profile.badges.includes(badgeId)) return false;
   profile.badges.push(badgeId);
+  awardXP(profile, XP_AWARDS.EARN_BADGE);
   saveProfile(profile);
   return true;
+}
+
+export function awardXP(profile: SparkProfile, amount: number): { leveled: boolean; newLevel: number; oldLevel: number } {
+  const mult = getXPMultiplier();
+  const xpToAdd = Math.round(amount * mult);
+  const oldLevel = getLevelForXP(profile.xp).level;
+  profile.xp += xpToAdd;
+  const newLevel = getLevelForXP(profile.xp).level;
+  profile.level = newLevel;
+  return { leveled: newLevel > oldLevel, newLevel, oldLevel };
+}
+
+export function awardCoins(profile: SparkProfile, amount: number) {
+  profile.sparkCoins += amount;
+  saveProfile(profile);
+}
+
+export function collectSparkle(sparkleId: string): boolean {
+  const profile = getProfile();
+  if (!profile) return false;
+  if (profile.collectedSparkles.includes(sparkleId)) return false;
+  profile.collectedSparkles.push(sparkleId);
+  awardXP(profile, XP_AWARDS.COLLECT_SPARKLE);
+  // Check for land mastery
+  const sparkle = SPARKLE_LOCATIONS.find(s => s.id === sparkleId);
+  if (sparkle) {
+    const landSparkles = getSparklesForLand(sparkle.landId);
+    const allCollected = landSparkles.every(s => profile.collectedSparkles.includes(s.id));
+    if (allCollected) {
+      const badgeId = `land-master-${sparkle.landId}`;
+      if (!profile.badges.includes(badgeId)) {
+        profile.badges.push(badgeId);
+      }
+    }
+    // Check for sparkle hunter (all sparkles)
+    if (profile.collectedSparkles.length >= SPARKLE_LOCATIONS.length) {
+      if (!profile.badges.includes('sparkle-hunter')) {
+        profile.badges.push('sparkle-hunter');
+      }
+    }
+  }
+  saveProfile(profile);
+  return true;
+}
+
+export function processDailyLogin(profile: SparkProfile): { isNewDay: boolean; reward: DailyReward; streak: number } {
+  const today = getTodayDateString();
+  if (profile.lastLoginDate === today) {
+    return { isNewDay: false, reward: getDailyReward(profile.loginStreak), streak: profile.loginStreak };
+  }
+
+  // Check if streak continues (yesterday) or resets
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+  if (profile.lastLoginDate === yesterdayStr) {
+    profile.loginStreak += 1;
+  } else {
+    profile.loginStreak = 1;
+  }
+
+  profile.lastLoginDate = today;
+
+  const reward = getDailyReward(profile.loginStreak);
+  if (reward.type === 'coins' && reward.amount) {
+    profile.sparkCoins += reward.amount;
+  }
+  awardXP(profile, XP_AWARDS.DAILY_LOGIN);
+
+  // Weekly Hero badge on day 7
+  if (profile.loginStreak % 7 === 0) {
+    if (!profile.badges.includes('weekly-hero')) {
+      profile.badges.push('weekly-hero');
+    }
+  }
+  // Unstoppable badge at 30 days
+  if (profile.loginStreak >= 30) {
+    if (!profile.badges.includes('unstoppable')) {
+      profile.badges.push('unstoppable');
+    }
+  }
+
+  saveProfile(profile);
+  return { isNewDay: true, reward, streak: profile.loginStreak };
 }
 
 /* ---- Common conditions ---- */
