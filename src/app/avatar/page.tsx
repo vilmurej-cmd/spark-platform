@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Ember, { SparkBurst, BottomNav } from '@/components/Ember';
-import { getProfile, saveProfile } from '@/lib/spark-data';
+import { getProfile, saveProfile, SHOP_ITEMS, awardCoins } from '@/lib/spark-data';
 
 const BODY_TYPES = [
   { value: 'standing', label: 'Standing', emoji: '🧍' },
@@ -444,10 +444,109 @@ export default function AvatarPage() {
             <button onClick={handleSave} className="btn-spark btn-primary w-full text-lg min-h-[56px]">
               {saved ? 'Saved! ✨' : 'Save My Avatar'}
             </button>
+
+            {/* ---- SPARK SHOP ---- */}
+            <SparkShop />
           </div>
         </motion.div>
       </div>
       <BottomNav />
+    </div>
+  );
+}
+
+/* ---- Spark Shop Component ---- */
+function SparkShop() {
+  const [profile, setProfile] = useState(getProfile());
+  const [purchased, setPurchased] = useState<string | null>(null);
+  const [shopCategory, setShopCategory] = useState<'cape' | 'companion' | 'decoration' | 'tool'>('cape');
+
+  if (!profile) return null;
+
+  const coins = profile.sparkCoins || 0;
+  const owned = profile.unlockedCosmetics || [];
+
+  const handleBuy = (itemId: string, cost: number) => {
+    if (coins < cost || owned.includes(itemId)) return;
+    const p = getProfile();
+    if (!p) return;
+    p.sparkCoins -= cost;
+    if (!p.unlockedCosmetics) p.unlockedCosmetics = [];
+    p.unlockedCosmetics.push(itemId);
+    saveProfile(p);
+    setProfile({ ...p });
+    setPurchased(itemId);
+    setTimeout(() => setPurchased(null), 2000);
+  };
+
+  const categories = [
+    { id: 'cape' as const, label: 'Capes', emoji: '🧥' },
+    { id: 'companion' as const, label: 'Companion', emoji: '🐾' },
+    { id: 'decoration' as const, label: 'Home', emoji: '🏡' },
+    { id: 'tool' as const, label: 'Tools', emoji: '⚔️' },
+  ];
+
+  const filteredItems = SHOP_ITEMS.filter(i => i.category === shopCategory);
+
+  return (
+    <div className="mt-8">
+      <h2 className="text-2xl font-display font-bold text-center mb-1 bg-gradient-to-r from-spark to-ember bg-clip-text text-transparent">
+        Spark Shop
+      </h2>
+      <p className="text-center font-body text-text-muted mb-1 text-sm">Spend your earned coins on cool stuff!</p>
+      <p className="text-center font-display font-bold text-lg mb-4" style={{ color: '#FFD700' }}>
+        🪙 {coins} Spark Coins
+      </p>
+      <p className="text-center font-body text-[10px] text-text-muted mb-4 italic">
+        Coins are earned through playing — never purchased. SPARK is free forever.
+      </p>
+
+      {/* Category tabs */}
+      <div className="flex gap-2 mb-4 justify-center flex-wrap">
+        {categories.map(cat => (
+          <button key={cat.id} onClick={() => setShopCategory(cat.id)}
+            className={`px-3 py-1.5 rounded-full text-sm font-display font-medium transition-all ${
+              shopCategory === cat.id ? 'bg-ember text-white' : 'bg-spark/20 text-text'
+            }`}>
+            {cat.emoji} {cat.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Items */}
+      <div className="grid grid-cols-2 gap-3">
+        {filteredItems.map(item => {
+          const isOwned = owned.includes(item.id);
+          const canAfford = coins >= item.cost;
+          const justBought = purchased === item.id;
+
+          return (
+            <div key={item.id}
+              className={`spark-card p-4 text-center transition-all ${isOwned ? 'opacity-60' : ''}`}
+              style={isOwned ? { borderColor: '#7FB069' } : {}}>
+              <span className="text-3xl block mb-2">{item.emoji}</span>
+              <p className="font-display font-bold text-sm text-text">{item.name}</p>
+              <p className="font-body text-[10px] text-text-muted mb-2">{item.description}</p>
+              {isOwned ? (
+                <span className="font-display text-xs text-forest font-bold">✅ Owned</span>
+              ) : justBought ? (
+                <span className="font-display text-xs text-spark font-bold">✨ Purchased!</span>
+              ) : (
+                <button
+                  onClick={() => handleBuy(item.id, item.cost)}
+                  disabled={!canAfford}
+                  className={`px-3 py-1 rounded-full text-xs font-display font-bold transition-all ${
+                    canAfford
+                      ? 'bg-spark text-night hover:bg-ember hover:text-white'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  }`}>
+                  🪙 {item.cost}
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

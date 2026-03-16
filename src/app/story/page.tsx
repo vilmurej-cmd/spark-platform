@@ -355,9 +355,14 @@ export default function StoryPage() {
             <h1 className="text-3xl md:text-4xl font-display font-bold text-center mb-2 bg-gradient-to-r from-ember to-heart bg-clip-text text-transparent">
               My Story
             </h1>
-            <p className="text-center font-body text-text-light mb-6">
+            <p className="text-center font-body text-text-light mb-4">
               Let Ember write a magical book just for you!
             </p>
+
+            {/* ---- MY BOOKSHELF ---- */}
+            <StoryBookshelf
+              onReread={(s) => { setStory(s); setCurrentPage(0); setPhase('reader'); }}
+            />
 
             <div className="space-y-5">
               {/* Name */}
@@ -614,6 +619,102 @@ export default function StoryPage() {
         </div>
       </div>
       <BottomNav />
+    </div>
+  );
+}
+
+/* ---- Story Bookshelf Component ---- */
+function StoryBookshelf({ onReread }: { onReread: (story: GeneratedStory) => void }) {
+  const profile = getProfile();
+  if (!profile || !profile.stories || profile.stories.length === 0) return null;
+
+  const stories = profile.stories;
+  const nextVolume = stories.length + 1;
+
+  // Check if next volume is unlocked (requires a day to pass since last story)
+  const lastStory = stories[stories.length - 1];
+  const lastStoryDate = lastStory?.createdAt ? new Date(lastStory.createdAt).toISOString().split('T')[0] : '';
+  const today = new Date().toISOString().split('T')[0];
+  const nextVolumeUnlocked = lastStoryDate !== today;
+
+  // Book spine colors
+  const spineColors = ['#FF8C42', '#5DADE2', '#9B72CF', '#FF6B8A', '#7FB069', '#FFD166', '#14B8A6', '#DC2626', '#3B82F6', '#F59E0B'];
+
+  return (
+    <div className="mb-6">
+      <h2 className="font-display font-bold text-lg text-text mb-3 flex items-center gap-2">
+        📚 My Bookshelf
+        <span className="text-xs font-body text-text-muted font-normal">({stories.length} volume{stories.length !== 1 ? 's' : ''})</span>
+      </h2>
+
+      {/* Bookshelf visual */}
+      <div className="spark-card p-4 overflow-hidden" style={{ background: 'linear-gradient(180deg, #8B6F47 0%, #6B5434 100%)' }}>
+        {/* Shelf */}
+        <div className="flex gap-2 overflow-x-auto pb-2" style={{ minHeight: 100 }}>
+          {stories.map((s, i) => {
+            const isSpecial = (i + 1) === 5 || (i + 1) === 10;
+            return (
+              <button
+                key={i}
+                onClick={() => onReread(s.story)}
+                className="flex-shrink-0 rounded-lg flex flex-col items-center justify-end p-1.5 hover:brightness-110 transition-all"
+                style={{
+                  width: 48,
+                  height: 80,
+                  background: `linear-gradient(135deg, ${spineColors[i % spineColors.length]}, ${spineColors[(i + 3) % spineColors.length]})`,
+                  border: isSpecial ? '2px solid #FFD166' : 'none',
+                }}
+              >
+                <span className="font-display text-[8px] font-bold text-white/90 text-center leading-tight">
+                  Vol. {i + 1}
+                </span>
+                <span className="font-body text-[6px] text-white/60 text-center leading-tight truncate w-full">
+                  {s.story.title.split(' ').slice(0, 3).join(' ')}
+                </span>
+              </button>
+            );
+          })}
+
+          {/* Next volume slot */}
+          <div className="flex-shrink-0 rounded-lg flex flex-col items-center justify-center p-1.5 border-2 border-dashed"
+            style={{
+              width: 48, height: 80,
+              borderColor: nextVolumeUnlocked ? '#FFD166' : '#FFFFFF33',
+              background: nextVolumeUnlocked ? 'rgba(255,209,102,0.15)' : 'rgba(255,255,255,0.05)',
+            }}>
+            {nextVolumeUnlocked ? (
+              <>
+                <span className="text-lg">✨</span>
+                <span className="font-display text-[7px] font-bold text-spark text-center">NEW!</span>
+              </>
+            ) : (
+              <>
+                <span className="text-lg">🔒</span>
+                <span className="font-display text-[7px] text-white/40 text-center">Vol. {nextVolume}</span>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Shelf bottom */}
+        <div className="h-2 bg-amber-900/80 rounded-b-lg -mx-4 -mb-4 mt-2" />
+      </div>
+
+      {/* Unlock message */}
+      {!nextVolumeUnlocked && stories.length > 0 && (
+        <p className="font-body text-xs text-text-muted text-center mt-2 italic">
+          Volume {nextVolume} unlocks tomorrow! Come back for your next adventure.
+        </p>
+      )}
+      {nextVolumeUnlocked && stories.length > 0 && (
+        <motion.p
+          className="font-body text-xs text-spark text-center mt-2 font-bold"
+          animate={{ scale: [1, 1.05, 1] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          🦊 Your next adventure is ready! Create Volume {nextVolume} below!
+        </motion.p>
+      )}
     </div>
   );
 }
