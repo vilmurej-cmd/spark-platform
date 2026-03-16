@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useCallback, lazy, Suspense } from 'react';
+import { useState, useCallback, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Ember, { BottomNav } from '@/components/Ember';
 import { BRAVE_LANDS, getLandCompletionPercent, getProfile, type BraveWorldLand } from '@/lib/spark-data';
+import { MusicEngine, AmbienceEngine, SFXEngine } from '@/lib/sound';
 
 // Lazy-load the PixiJS game to avoid loading it on the map view
 const BraveWorldGame = lazy(() => import('@/components/game/BraveWorldGame'));
@@ -55,6 +56,21 @@ export default function WorldPage() {
   const handleFallbackToCSS = useCallback(() => {
     setMode('land');
   }, []);
+
+  // Music + ambience based on current mode/land
+  useEffect(() => {
+    if (mode === 'map') {
+      MusicEngine.playTheme('map');
+      AmbienceEngine.stopAmbience();
+    } else if ((mode === 'game' || mode === 'land') && activeLand) {
+      MusicEngine.playTheme(activeLand.id);
+      AmbienceEngine.startAmbience(activeLand.id);
+    }
+    return () => {
+      MusicEngine.stopMusic();
+      AmbienceEngine.stopAmbience();
+    };
+  }, [mode, activeLand]);
 
   /* ======== MAP MODE — Full-screen fantasy world ======== */
   if (mode === 'map') {

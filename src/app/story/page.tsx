@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BottomNav } from '@/components/Ember';
+import { SFXEngine } from '@/lib/sound';
 import {
   getProfile, STORY_TONES, FAVORITE_THINGS, CONDITIONS, DEMO_STORY,
   type GeneratedStory, type StorybookData, type StoryPage, earnBadge, saveProfile,
@@ -342,8 +343,12 @@ export default function StoryPage() {
     setIsReading(false);
     const next = currentPage + dir;
     if (next < 0 || next >= story.pages.length + 2) return;
+    SFXEngine.pageTurn();
     setCurrentPage(next);
-    if (next === story.pages.length + 1) handleFinishReading();
+    if (next === story.pages.length + 1) {
+      handleFinishReading();
+      SFXEngine.badgeEarn();
+    }
   };
 
   // --- FORM PHASE ---

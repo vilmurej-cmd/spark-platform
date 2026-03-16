@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Ember, { SparkBurst, BottomNav } from '@/components/Ember';
 import { getProfile, earnBadge } from '@/lib/spark-data';
+import { SFXEngine } from '@/lib/sound';
 
 type GameId = 'breathing' | 'crystal' | 'memory' | 'quiz' | null;
 
@@ -139,6 +140,8 @@ function DragonBreathing({ onBack }: { onBack: () => void }) {
       setRunning(false);
       setCycles(4);
       setShowBurst(true);
+      SFXEngine.gameWin();
+      SFXEngine.dragonPurr();
       setTimeout(() => setShowBurst(false), 2000);
       try {
         const prev = parseInt(localStorage.getItem('spark-breathing-sessions') || '0', 10);
@@ -147,12 +150,14 @@ function DragonBreathing({ onBack }: { onBack: () => void }) {
       return;
     }
     setPhase('inhale');
+    SFXEngine.breatheIn();
     startCountdown(4);
     timerRef.current = setTimeout(() => {
       setPhase('hold');
       startCountdown(4);
       timerRef.current = setTimeout(() => {
         setPhase('exhale');
+        SFXEngine.breatheOut();
         startCountdown(6);
         timerRef.current = setTimeout(() => {
           setCycles(count + 1);
@@ -495,6 +500,7 @@ function CrystalBalance({ onBack }: { onBack: () => void }) {
           setTimer(t => {
             if (t >= 29) {
               setGameState('won');
+              SFXEngine.gameWin();
               if (timerRef.current) clearInterval(timerRef.current);
               return 30;
             }
@@ -509,6 +515,7 @@ function CrystalBalance({ onBack }: { onBack: () => void }) {
 
   const eatFood = (food: typeof foods[0]) => {
     if (gameState !== 'playing') return;
+    SFXEngine.foodPop();
     setLastFood(`${food.emoji} ${food.name}`);
     if (food.type === 'spike') {
       setGauge(prev => Math.min(95, prev + food.effect));
@@ -522,6 +529,7 @@ function CrystalBalance({ onBack }: { onBack: () => void }) {
   };
 
   const useCrystalKeeper = () => {
+    SFXEngine.crystalPower();
     setGauge(50);
     setShowKeeperBtn(false);
   };
@@ -720,6 +728,7 @@ function MemoryMatch({ onBack }: { onBack: () => void }) {
     const card = cards[id];
     if (card.flipped || card.matched) return;
 
+    SFXEngine.cardFlip();
     const next = cards.map(c => c.id === id ? { ...c, flipped: true } : c);
     setCards(next);
     const newSel = [...selected, id];
@@ -729,15 +738,17 @@ function MemoryMatch({ onBack }: { onBack: () => void }) {
       setMoves(m => m + 1);
       const [a, b] = newSel;
       if (next[a].pair.emoji === next[b].pair.emoji) {
+        SFXEngine.correct();
         setMatchedFact(next[a].pair.fact);
         setTimeout(() => {
           setCards(prev => prev.map(c => c.id === a || c.id === b ? { ...c, matched: true } : c));
           setSelected([]);
           const remaining = next.filter(c => !c.matched && c.id !== a && c.id !== b).length;
-          if (remaining === 0) setWon(true);
+          if (remaining === 0) { setWon(true); SFXEngine.gameWin(); }
         }, 800);
         setTimeout(() => setMatchedFact(''), 3000);
       } else {
+        SFXEngine.wrong();
         setTimeout(() => {
           setCards(prev => prev.map(c => c.id === a || c.id === b ? { ...c, flipped: false } : c));
           setSelected([]);
@@ -831,14 +842,21 @@ function EmberQuiz({ onBack }: { onBack: () => void }) {
 
   const handleAnswer = (idx: number) => {
     if (selected !== null) return;
+    SFXEngine.buttonTap();
     setSelected(idx);
-    if (idx === q.answer) setScore(s => s + 1);
+    if (idx === q.answer) {
+      setScore(s => s + 1);
+      SFXEngine.correct();
+    } else {
+      SFXEngine.wrong();
+    }
     setTimeout(() => {
       if (qIdx < QUIZ_QUESTIONS.length - 1) {
         setQIdx(i => i + 1);
         setSelected(null);
       } else {
         setDone(true);
+        SFXEngine.gameWin();
       }
     }, 2500);
   };

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings } from 'lucide-react';
+import { Settings, Volume2, VolumeX } from 'lucide-react';
 import Link from 'next/link';
 import Ember, { SparkBurst, BottomNav } from '@/components/Ember';
 import {
@@ -24,6 +24,8 @@ import {
   type DailyReward,
   type HeroLevel,
 } from '@/lib/spark-data';
+import { useSparkSound } from '@/lib/sound/useSparkSound';
+import { SFXEngine, MusicEngine, VoiceEngine } from '@/lib/sound';
 
 type Phase = 'oath-intro' | 'oath-name' | 'oath-condition' | 'oath-lines' | 'bloom' | 'home';
 
@@ -46,6 +48,7 @@ export default function HomePage() {
   const [showBurst, setShowBurst] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [timeOfDay, setTimeOfDay] = useState<'day' | 'sunset' | 'night'>('day');
+  const { soundOn, toggleSound } = useSparkSound();
 
   // Engagement overlay states
   const [showDailySpark, setShowDailySpark] = useState(false);
@@ -92,15 +95,27 @@ export default function HomePage() {
     setLoaded(true);
   }, []);
 
+  // Start/stop home music based on phase and sound
+  useEffect(() => {
+    if (phase === 'home' && soundOn && !showDailySpark && !pendingLevelUp) {
+      MusicEngine.playTheme('home', timeOfDay === 'night');
+    }
+    return () => {
+      if (phase !== 'home') MusicEngine.stopMusic();
+    };
+  }, [phase, soundOn, timeOfDay, showDailySpark, pendingLevelUp]);
+
   const handleCollectDailySpark = useCallback(() => {
     setShowDailySpark(false);
     setDailySparkData(null);
+    SFXEngine.coinCollect();
   }, []);
 
   const triggerLevelUp = useCallback(
     (oldLevel: HeroLevel, newLevel: HeroLevel) => {
       setPendingLevelUp({ oldLevel, newLevel });
       setShowBurst(true);
+      SFXEngine.levelUp();
       setTimeout(() => {
         setShowBurst(false);
       }, 3000);
@@ -145,6 +160,7 @@ export default function HomePage() {
   const handleOathTap = () => {
     if (oathLineIdx < oathLines.length - 1) {
       setOathLineIdx((i) => i + 1);
+      SFXEngine.oathReveal();
     } else {
       const newProfile: SparkProfile = {
         name: childName.trim(),
@@ -748,6 +764,17 @@ export default function HomePage() {
             </span>
           </div>
           <div className="flex items-center gap-3">
+            <button
+              onClick={toggleSound}
+              className="p-2 rounded-full hover:bg-spark/10 transition-colors"
+              title={soundOn ? 'Sound On' : 'Sound Off'}
+            >
+              {soundOn ? (
+                <Volume2 className="h-4 w-4" style={{ color: isNight ? '#FFD166' : '#FF8C42' }} />
+              ) : (
+                <VolumeX className="h-4 w-4" style={{ color: isNight ? '#FFD16666' : '#999' }} />
+              )}
+            </button>
             <span
               className="text-sm font-display font-bold"
               style={{ color: '#FFD700' }}
