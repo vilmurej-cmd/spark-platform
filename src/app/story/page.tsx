@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { BottomNav } from '@/components/Ember';
 import {
   getProfile, STORY_TONES, FAVORITE_THINGS, CONDITIONS, DEMO_STORY,
-  type GeneratedStory, type StorybookData, earnBadge, saveProfile,
+  type GeneratedStory, type StorybookData, type StoryPage, earnBadge, saveProfile,
 } from '@/lib/spark-data';
 
 const LOADING_MESSAGES = [
@@ -16,6 +16,175 @@ const LOADING_MESSAGES = [
   "Almost ready, brave one...",
   "Putting on the finishing touches...",
 ];
+
+/* ---- Mood-based color palettes for illustrations ---- */
+function getMoodTheme(mood: string): { sky: string[]; hasStars: boolean; hasTrees: boolean; particleType: 'sparkle' | 'feather' | 'stars' | 'glow'; groundColor: string } {
+  const m = mood.toLowerCase();
+  if (m.includes('joyful') || m.includes('triumphant')) {
+    return { sky: ['#FFD166', '#87CEEB'], hasStars: false, hasTrees: false, particleType: 'sparkle', groundColor: '#7FB069' };
+  }
+  if (m.includes('concern') || m.includes('empathy')) {
+    return { sky: ['#FF8C42', '#C4A6D6'], hasStars: false, hasTrees: false, particleType: 'glow', groundColor: '#8BC070' };
+  }
+  if (m.includes('magical') || m.includes('empowering')) {
+    return { sky: ['#1E3A5F', '#9B72CF'], hasStars: true, hasTrees: false, particleType: 'sparkle', groundColor: '#5C8F48' };
+  }
+  if (m.includes('peaceful') || m.includes('proud')) {
+    return { sky: ['#1A1428', '#2A1F3D'], hasStars: true, hasTrees: false, particleType: 'stars', groundColor: '#355E28' };
+  }
+  if (m.includes('warm') || m.includes('reassuring')) {
+    return { sky: ['#FFF8E7', '#FFB3C1'], hasStars: false, hasTrees: false, particleType: 'glow', groundColor: '#8BC070' };
+  }
+  if (m.includes('brave') || m.includes('kind')) {
+    return { sky: ['#FFD166', '#7FB069'], hasStars: false, hasTrees: true, particleType: 'sparkle', groundColor: '#6A9F55' };
+  }
+  if (m.includes('calm') || m.includes('connected')) {
+    return { sky: ['#C1E8C1', '#C4A6D6'], hasStars: false, hasTrees: true, particleType: 'feather', groundColor: '#7FB069' };
+  }
+  // Default
+  return { sky: ['#87CEEB', '#FFD166'], hasStars: false, hasTrees: false, particleType: 'sparkle', groundColor: '#7FB069' };
+}
+
+/* ---- Rich Story Illustration Component ---- */
+function StoryIllustration({ page, nightMode }: { page: StoryPage; nightMode: boolean }) {
+  const theme = getMoodTheme(page.illustration.mood);
+  const sky0 = nightMode ? '#1A1428' : theme.sky[0];
+  const sky1 = nightMode ? '#2A1F3D' : theme.sky[1];
+
+  return (
+    <div className="relative w-full h-64 overflow-hidden" style={{ background: `linear-gradient(to bottom, ${sky0}, ${sky1})` }}>
+      {/* Layer 1: Sky + Stars */}
+      {(theme.hasStars || nightMode) && (
+        <>
+          {[...Array(8)].map((_, i) => (
+            <motion.div
+              key={`star-${i}`}
+              className="absolute w-1 h-1 rounded-full"
+              style={{
+                background: nightMode ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.9)',
+                top: `${5 + Math.random() * 30}%`,
+                left: `${5 + Math.random() * 90}%`,
+              }}
+              animate={{ opacity: [0.3, 0.9, 0.3], scale: [0.8, 1.2, 0.8] }}
+              transition={{ duration: 2 + Math.random() * 2, repeat: Infinity, delay: i * 0.3 }}
+            />
+          ))}
+        </>
+      )}
+
+      {/* Moon for night/peaceful moods */}
+      {(theme.sky[0] === '#1A1428' || nightMode) && (
+        <div className="absolute top-3 right-6 w-8 h-8 rounded-full bg-gradient-to-br from-gray-200 to-gray-100 opacity-80"
+          style={{ boxShadow: '0 0 12px rgba(255,255,255,0.3)' }} />
+      )}
+
+      {/* Layer 2: Ground/Setting */}
+      <div className="absolute bottom-0 left-[-10%] w-[60%] h-[35%] rounded-t-[50%]"
+        style={{ background: nightMode ? '#264218' : theme.groundColor, opacity: 0.6 }} />
+      <div className="absolute bottom-0 right-[-8%] w-[55%] h-[30%] rounded-t-[50%]"
+        style={{ background: nightMode ? '#2D4A22' : theme.groundColor, opacity: 0.5 }} />
+
+      {/* Trees for forest moods */}
+      {theme.hasTrees && !nightMode && (
+        <>
+          <div className="absolute bottom-[28%] left-[10%]">
+            <div className="w-4 h-6 rounded-t-full" style={{ background: '#5C8F48' }} />
+            <div className="w-1.5 h-3 mx-auto" style={{ background: '#8B6F47' }} />
+          </div>
+          <div className="absolute bottom-[25%] right-[15%]">
+            <div className="w-5 h-7 rounded-t-full" style={{ background: '#7FB069' }} />
+            <div className="w-1.5 h-3 mx-auto" style={{ background: '#8B6F47' }} />
+          </div>
+          <div className="absolute bottom-[30%] left-[35%]">
+            <div className="w-3.5 h-5 rounded-t-full" style={{ background: '#6A9F55' }} />
+            <div className="w-1 h-2.5 mx-auto" style={{ background: '#8B6F47' }} />
+          </div>
+        </>
+      )}
+
+      {/* Layer 3: Mood particles */}
+      {theme.particleType === 'sparkle' && (
+        <>
+          {[...Array(5)].map((_, i) => (
+            <motion.div
+              key={`sp-${i}`}
+              className="absolute w-1.5 h-1.5 rounded-full"
+              style={{
+                background: nightMode ? '#FFD16688' : page.illustration.colors[i % page.illustration.colors.length],
+                left: `${15 + i * 18}%`,
+                top: `${20 + (i % 3) * 15}%`,
+              }}
+              animate={{ opacity: [0.3, 0.8, 0.3], scale: [0.5, 1.2, 0.5], y: [0, -8, 0] }}
+              transition={{ duration: 2, repeat: Infinity, delay: i * 0.4 }}
+            />
+          ))}
+        </>
+      )}
+
+      {theme.particleType === 'feather' && (
+        <>
+          {[...Array(3)].map((_, i) => (
+            <motion.div
+              key={`ft-${i}`}
+              className="absolute w-2 h-4 rounded-full bg-white/50"
+              style={{ left: `${20 + i * 25}%`, top: `${15 + i * 10}%` }}
+              animate={{ y: [0, 30, 60], opacity: [0.6, 0.3, 0], rotate: [0, 20, -10] }}
+              transition={{ duration: 4, repeat: Infinity, delay: i * 1.2 }}
+            />
+          ))}
+        </>
+      )}
+
+      {theme.particleType === 'stars' && (
+        <>
+          {[...Array(5)].map((_, i) => (
+            <motion.div
+              key={`st-${i}`}
+              className="absolute w-1 h-1 rounded-full bg-white"
+              style={{ left: `${10 + i * 20}%`, top: `${10 + (i % 3) * 12}%` }}
+              animate={{ opacity: [0.2, 0.8, 0.2] }}
+              transition={{ duration: 2.5, repeat: Infinity, delay: i * 0.5 }}
+            />
+          ))}
+        </>
+      )}
+
+      {theme.particleType === 'glow' && (
+        <>
+          {[...Array(4)].map((_, i) => (
+            <motion.div
+              key={`gl-${i}`}
+              className="absolute w-3 h-3 rounded-full"
+              style={{
+                background: nightMode ? 'rgba(255,209,102,0.2)' : `${page.illustration.colors[i % page.illustration.colors.length]}44`,
+                left: `${15 + i * 22}%`,
+                top: `${25 + (i % 2) * 20}%`,
+              }}
+              animate={{ scale: [1, 1.5, 1], opacity: [0.2, 0.5, 0.2] }}
+              transition={{ duration: 3, repeat: Infinity, delay: i * 0.6 }}
+            />
+          ))}
+        </>
+      )}
+
+      {/* Layer 4: Central figure */}
+      <div className="absolute bottom-[20%] left-1/2 -translate-x-1/2 flex items-end gap-2">
+        {/* Child figure */}
+        <div className="flex flex-col items-center">
+          <div className="w-6 h-6 rounded-full" style={{ background: '#D4A574' }} />
+          <div className="w-5 h-8 rounded-lg mt-0.5" style={{ background: page.illustration.colors[0] || '#5DADE2' }} />
+        </div>
+        {/* Companion */}
+        <div className="w-4 h-4 rounded-full mb-1" style={{ background: page.illustration.colors[1] || '#FF8C42', opacity: 0.7 }} />
+      </div>
+
+      {/* Illustration description */}
+      <p className="absolute bottom-2 left-3 right-3 text-[10px] text-white/40 font-body italic text-center">
+        {page.illustration.description}
+      </p>
+    </div>
+  );
+}
 
 export default function StoryPage() {
   const [phase, setPhase] = useState<'form' | 'loading' | 'reader'>('form');
@@ -154,7 +323,7 @@ export default function StoryPage() {
     window.speechSynthesis.cancel();
     setIsReading(false);
     const next = currentPage + dir;
-    if (next < 0 || next >= story.pages.length + 2) return; // +2 for cover & end
+    if (next < 0 || next >= story.pages.length + 2) return;
     setCurrentPage(next);
     if (next === story.pages.length + 1) handleFinishReading();
   };
@@ -289,7 +458,6 @@ export default function StoryPage() {
             transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}>
             📖
           </motion.div>
-          {/* Sparkle particles */}
           <div className="relative h-8 mb-4">
             {[...Array(8)].map((_, i) => (
               <motion.div key={i}
@@ -311,16 +479,10 @@ export default function StoryPage() {
 
   // --- READER PHASE ---
   if (!story) return null;
-  const totalPages = story.pages.length + 2; // cover + pages + end
+  const totalPages = story.pages.length + 2;
   const isCover = currentPage === 0;
   const isEnd = currentPage === totalPages - 1;
   const pageData = !isCover && !isEnd ? story.pages[currentPage - 1] : null;
-
-  const gradientBg = pageData
-    ? `linear-gradient(135deg, ${pageData.illustration.colors[0]}33, ${pageData.illustration.colors[1]}33, ${pageData.illustration.colors[2] || pageData.illustration.colors[0]}22)`
-    : isCover
-      ? 'linear-gradient(135deg, #FF8C4233, #FFD16633, #FF6B8A22)'
-      : 'linear-gradient(135deg, #FFD16633, #7FB06933, #5DADE233)';
 
   return (
     <div className={`min-h-screen pb-24 transition-colors duration-500 ${nightMode ? 'night-mode' : ''}`}
@@ -329,79 +491,81 @@ export default function StoryPage() {
         {/* Controls bar */}
         <div className="flex items-center justify-between mb-4">
           <button onClick={() => { setPhase('form'); window.speechSynthesis.cancel(); }}
-            className="text-sm font-display text-text-muted hover:text-ember transition-colors">
+            className="text-sm font-display text-text-muted hover:text-ember transition-colors min-h-[48px] flex items-center">
             New Story
           </button>
           <div className="flex gap-2">
             <button onClick={readAloud}
-              className={`px-3 py-1.5 rounded-full text-sm font-display transition-all ${isReading ? 'bg-heart text-white' : 'bg-white border border-spark/30'}`}>
+              className={`px-3 py-1.5 rounded-full text-sm font-display transition-all min-h-[48px] ${isReading ? 'bg-heart text-white' : 'bg-white border border-spark/30'}`}>
               {isReading ? 'Stop' : 'Read to Me'}
             </button>
             <button onClick={() => setNightMode(!nightMode)}
-              className="px-3 py-1.5 rounded-full text-sm font-display bg-white border border-spark/30">
+              className="px-3 py-1.5 rounded-full text-sm font-display bg-white border border-spark/30 min-h-[48px]">
               {nightMode ? '☀️' : '🌙'}
             </button>
           </div>
         </div>
 
-        {/* Page display */}
+        {/* Page display with 3D perspective page turn */}
         <AnimatePresence mode="wait">
           <motion.div key={currentPage}
-            initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }}
-            transition={{ duration: 0.3 }}
+            initial={{ opacity: 0, rotateY: 15, x: 40 }}
+            animate={{ opacity: 1, rotateY: 0, x: 0 }}
+            exit={{ opacity: 0, rotateY: -15, x: -40 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
+            style={{ perspective: 800, transformStyle: 'preserve-3d' }}
             className="rounded-3xl overflow-hidden shadow-xl mb-6"
-            style={{ background: nightMode ? '#2A2438' : 'white' }}>
-
-            {/* Illustration area */}
-            <div className="h-56 flex items-center justify-center relative overflow-hidden"
-              style={{ background: nightMode ? gradientBg.replace(/33/g, '22') : gradientBg }}>
+          >
+            <div style={{ background: nightMode ? '#2A2438' : 'white' }}>
+              {/* Illustration area */}
               {isCover && (
-                <div className="text-center px-6">
-                  <motion.div className="text-6xl mb-3" animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 3, repeat: Infinity }}>
-                    📖✨
-                  </motion.div>
-                  <h1 className="font-display font-bold text-2xl text-text">{story.title}</h1>
-                  <p className="font-body text-sm text-text-muted mt-2 italic">{story.dedication}</p>
+                <div className="h-64 flex items-center justify-center relative overflow-hidden"
+                  style={{ background: nightMode ? 'linear-gradient(135deg, #FF8C4222, #FFD16622)' : 'linear-gradient(135deg, #FF8C4233, #FFD16633, #FF6B8A22)' }}>
+                  <div className="text-center px-6">
+                    <motion.div className="text-6xl mb-3" animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 3, repeat: Infinity }}>
+                      📖✨
+                    </motion.div>
+                    <h1 className={`font-display font-bold text-2xl ${nightMode ? 'text-cream' : 'text-text'}`}>{story.title}</h1>
+                    <p className={`font-body text-sm mt-2 italic ${nightMode ? 'text-cream/60' : 'text-text-muted'}`}>{story.dedication}</p>
+                  </div>
                 </div>
               )}
-              {isEnd && (
-                <div className="text-center px-6">
-                  <motion.div className="text-5xl mb-3" animate={{ scale: [1, 1.15, 1] }} transition={{ duration: 2, repeat: Infinity }}>
-                    🌟
-                  </motion.div>
-                  <h2 className="font-display font-bold text-xl text-text">The End</h2>
-                  <p className="font-body text-sm text-text-muted mt-1">You are braver than you know.</p>
-                </div>
-              )}
-              {pageData && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-32 h-32 rounded-full opacity-30" style={{ background: `radial-gradient(circle, ${pageData.illustration.colors[0]}, ${pageData.illustration.colors[1]})` }} />
-                  <p className="absolute bottom-3 left-4 right-4 text-xs text-text-muted/60 font-body italic text-center">
-                    {pageData.illustration.description}
-                  </p>
-                </div>
-              )}
-            </div>
 
-            {/* Text area */}
-            <div className="p-6">
-              {pageData && (
-                <p className={`font-body text-lg leading-relaxed ${nightMode ? 'text-cream/90' : 'text-text'}`}>
-                  {pageData.text}
-                </p>
-              )}
-              {isEnd && story.aboutTheCondition && (
-                <div className="mt-4 space-y-3">
-                  <div className="spark-card p-4">
-                    <h3 className="font-display font-semibold text-sm text-ember mb-1">For Kids</h3>
-                    <p className="font-body text-sm text-text">{story.aboutTheCondition.forKids}</p>
-                  </div>
-                  <div className="spark-card p-4">
-                    <h3 className="font-display font-semibold text-sm text-dream mb-1">For Parents</h3>
-                    <p className="font-body text-sm text-text">{story.aboutTheCondition.forParents}</p>
+              {isEnd && (
+                <div className="h-64 flex items-center justify-center relative overflow-hidden"
+                  style={{ background: nightMode ? 'linear-gradient(135deg, #FFD16622, #7FB06922)' : 'linear-gradient(135deg, #FFD16633, #7FB06933, #5DADE233)' }}>
+                  <div className="text-center px-6">
+                    <motion.div className="text-5xl mb-3" animate={{ scale: [1, 1.15, 1] }} transition={{ duration: 2, repeat: Infinity }}>
+                      🌟
+                    </motion.div>
+                    <h2 className={`font-display font-bold text-xl ${nightMode ? 'text-cream' : 'text-text'}`}>The End</h2>
+                    <p className={`font-body text-sm mt-1 ${nightMode ? 'text-cream/60' : 'text-text-muted'}`}>You are braver than you know.</p>
                   </div>
                 </div>
               )}
+
+              {pageData && <StoryIllustration page={pageData} nightMode={nightMode} />}
+
+              {/* Text area */}
+              <div className="p-6">
+                {pageData && (
+                  <p className={`font-body text-lg leading-relaxed ${nightMode ? 'text-cream/90' : 'text-text'}`}>
+                    {pageData.text}
+                  </p>
+                )}
+                {isEnd && story.aboutTheCondition && (
+                  <div className="mt-4 space-y-3">
+                    <div className="spark-card p-4">
+                      <h3 className="font-display font-semibold text-sm text-ember mb-1">For Kids</h3>
+                      <p className="font-body text-sm text-text">{story.aboutTheCondition.forKids}</p>
+                    </div>
+                    <div className="spark-card p-4">
+                      <h3 className="font-display font-semibold text-sm text-dream mb-1">For Parents</h3>
+                      <p className="font-body text-sm text-text">{story.aboutTheCondition.forParents}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </motion.div>
         </AnimatePresence>
@@ -409,12 +573,14 @@ export default function StoryPage() {
         {/* Navigation */}
         <div className="flex items-center justify-between mb-4">
           <button onClick={() => goPage(-1)} disabled={currentPage === 0}
-            className="btn-spark btn-secondary text-sm disabled:opacity-30">
+            className="btn-spark btn-secondary text-sm disabled:opacity-30 min-h-[48px]">
             Previous
           </button>
-          <span className="font-display text-sm text-text-muted">{currentPage + 1} / {totalPages}</span>
+          <span className={`font-display text-sm ${nightMode ? 'text-cream/50' : 'text-text-muted'}`}>
+            {currentPage + 1} / {totalPages}
+          </span>
           <button onClick={() => goPage(1)} disabled={currentPage === totalPages - 1}
-            className="btn-spark btn-primary text-sm disabled:opacity-30">
+            className="btn-spark btn-primary text-sm disabled:opacity-30 min-h-[48px]">
             Next
           </button>
         </div>
@@ -423,7 +589,7 @@ export default function StoryPage() {
         <div className="flex justify-center gap-1.5 flex-wrap">
           {Array.from({ length: totalPages }).map((_, i) => (
             <button key={i} onClick={() => { setCurrentPage(i); if (i === totalPages - 1) handleFinishReading(); }}
-              className={`w-2.5 h-2.5 rounded-full transition-all ${i === currentPage ? 'bg-ember scale-125' : 'bg-spark/40'}`} />
+              className={`w-2.5 h-2.5 rounded-full transition-all ${i === currentPage ? 'bg-ember scale-125' : nightMode ? 'bg-spark/20' : 'bg-spark/40'}`} />
           ))}
         </div>
       </div>
