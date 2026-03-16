@@ -35,7 +35,6 @@ export default function HomePage() {
       setProfile(existing);
       setPhase('home');
     }
-    // Determine time of day
     const hour = new Date().getHours();
     if (hour >= 6 && hour < 18) setTimeOfDay('day');
     else if (hour >= 18 && hour < 21) setTimeOfDay('sunset');
@@ -199,39 +198,35 @@ export default function HomePage() {
     );
   }
 
-  /* ---- HOME — Illustrated Landscape ---- */
+  /* ---- HOME — Immersive Illustrated Landscape ---- */
   const badgeCount = profile?.badges?.length || 0;
   const storyCount = profile?.stories?.length || 0;
   const dailyMessage = EMBER_MESSAGES[Math.floor(Date.now() / 86400000) % EMBER_MESSAGES.length]
     .replace('{name}', profile?.name || 'hero');
 
-  // Time-of-day theming
-  const skyGradient = timeOfDay === 'day'
-    ? 'from-[#87CEEB] via-[#B0D4E8] to-[#E8F4FD]'
-    : timeOfDay === 'sunset'
-      ? 'from-[#FF8C42]/60 via-[#9B72CF]/40 to-[#FFD166]/30'
-      : 'from-[#1A1428] via-[#2A1F3D] to-[#1A1428]';
+  const isNight = timeOfDay === 'night';
+  const isSunset = timeOfDay === 'sunset';
 
   const landscapeItems = [
-    { href: '/story', emoji: '📖', label: 'My Story', top: '18%', left: '15%' },
-    { href: '/badges', emoji: '🏅', label: 'Badges', top: '15%', left: '78%' },
-    { href: '/world', emoji: '🗺️', label: 'Brave World', top: '38%', left: '12%' },
-    { href: '/games', emoji: '🎮', label: 'Games', top: '35%', left: '82%' },
-    { href: '/campfire', emoji: '🔥', label: 'Campfire', top: '62%', left: '48%' },
-    { href: '/letters', emoji: '✉️', label: 'Letters', top: '60%', left: '15%' },
-    { href: '/avatar', emoji: '🦸', label: 'Avatar', top: '58%', left: '82%' },
-    { href: '/hospital', emoji: '🏥', label: 'Hospital', top: '40%', left: '55%' },
+    { href: '/story', emoji: '📖', label: 'My Story', top: '16%', left: '14%' },
+    { href: '/badges', emoji: '🏅', label: 'Badges', top: '13%', left: '80%' },
+    { href: '/world', emoji: '🗺️', label: 'Brave World', top: '35%', left: '10%' },
+    { href: '/games', emoji: '🎮', label: 'Games', top: '32%', left: '85%' },
+    { href: '/campfire', emoji: '🔥', label: 'Campfire', top: '62%', left: '50%' },
+    { href: '/letters', emoji: '✉️', label: 'Letters', top: '58%', left: '14%' },
+    { href: '/avatar', emoji: '🦸', label: 'Avatar', top: '55%', left: '85%' },
+    { href: '/hospital', emoji: '🏥', label: 'Hospital', top: '38%', left: '55%' },
   ];
 
   return (
-    <div className="min-h-screen pb-24" style={{ background: timeOfDay === 'night' ? '#1A1428' : '#FFF8E7' }}>
+    <div className="min-h-screen pb-24" style={{ background: isNight ? '#1A1428' : '#FFF8E7' }}>
       {/* Header */}
       <div className="sticky top-0 z-30 backdrop-blur-lg border-b px-4 py-3"
         style={{
-          background: timeOfDay === 'night' ? 'rgba(26,20,40,0.9)' : 'rgba(255,248,231,0.9)',
-          borderColor: timeOfDay === 'night' ? 'rgba(255,209,102,0.15)' : 'rgba(255,209,102,0.1)',
+          background: isNight ? 'rgba(26,20,40,0.9)' : 'rgba(255,248,231,0.9)',
+          borderColor: isNight ? 'rgba(255,209,102,0.15)' : 'rgba(255,209,102,0.1)',
         }}>
-        <div className="max-w-lg mx-auto flex items-center justify-between">
+        <div className="spark-container flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xl">🦊</span>
             <span className="font-display text-lg font-bold text-ember">SPARK</span>
@@ -239,168 +234,237 @@ export default function HomePage() {
           <div className="flex items-center gap-3">
             <Link href="/badges" className="text-sm font-display font-bold text-spark">🏅 {badgeCount}</Link>
             <Link href="/parents" className="p-2 rounded-full hover:bg-spark/10 transition-colors">
-              <Settings className="h-4 w-4" style={{ color: timeOfDay === 'night' ? '#FFD166' : '#999' }} />
+              <Settings className="h-4 w-4" style={{ color: isNight ? '#FFD166' : '#999' }} />
             </Link>
           </div>
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 pt-4">
-        {/* ---- The Brave World Homescape ---- */}
-        <div className="relative w-full rounded-3xl overflow-hidden shadow-xl mb-6" style={{ height: 420 }}>
-          {/* Sky */}
-          <div className={`absolute inset-0 bg-gradient-to-b ${skyGradient}`} />
+      {/* ---- IMMERSIVE LANDSCAPE — Full-width, 70vh+ ---- */}
+      <div className="immersive-scene" style={{ minHeight: '72vh' }}>
+        {/* Sky gradient */}
+        <div className="absolute inset-0" style={{
+          background: isNight
+            ? 'linear-gradient(180deg, #0D0A1A 0%, #1A1428 30%, #2A1F3D 70%, #1A1428 100%)'
+            : isSunset
+              ? 'linear-gradient(180deg, #FF6B8A 0%, #FF8C42 25%, #FFD166 50%, #87CEEB 80%, #B0D4E8 100%)'
+              : 'linear-gradient(180deg, #4A90D9 0%, #87CEEB 25%, #B0D4E8 50%, #E8F4FD 80%, #FFF8E7 100%)',
+        }} />
 
-          {/* Sun/Moon */}
-          {timeOfDay === 'night' ? (
-            <motion.div
-              className="absolute top-6 right-8 w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-300"
-              animate={{ boxShadow: ['0 0 10px rgba(255,255,255,0.3)', '0 0 20px rgba(255,255,255,0.4)', '0 0 10px rgba(255,255,255,0.3)'] }}
-              transition={{ duration: 4, repeat: Infinity }}
-            />
-          ) : (
-            <motion.div
-              className="absolute top-5 right-8 w-12 h-12 rounded-full bg-gradient-to-br from-spark to-ember"
-              animate={{ boxShadow: ['0 0 15px #FFD166', '0 0 30px #FFD166', '0 0 15px #FFD166'] }}
-              transition={{ duration: 3, repeat: Infinity }}
-            />
-          )}
-
-          {/* Stars (night only) */}
-          {timeOfDay === 'night' && (
-            <>
-              {[...Array(15)].map((_, i) => (
-                <motion.div
-                  key={i}
-                  className="absolute w-1 h-1 rounded-full bg-white"
-                  style={{ top: `${5 + Math.random() * 35}%`, left: `${5 + Math.random() * 90}%` }}
-                  animate={{ opacity: [0.3, 0.8, 0.3] }}
-                  transition={{ duration: 2 + Math.random() * 2, repeat: Infinity, delay: i * 0.2 }}
-                />
-              ))}
-            </>
-          )}
-
-          {/* Clouds */}
-          <motion.div className="absolute top-10 text-2xl" style={{ left: '10%' }}
-            animate={{ x: [0, 60, 0] }} transition={{ duration: 22, repeat: Infinity, ease: 'linear' }}>
-            {timeOfDay === 'night' ? '' : '☁️'}
-          </motion.div>
-          <motion.div className="absolute top-16 text-xl" style={{ left: '55%' }}
-            animate={{ x: [0, -40, 0] }} transition={{ duration: 18, repeat: Infinity, ease: 'linear' }}>
-            {timeOfDay === 'night' ? '' : '☁️'}
-          </motion.div>
-          <motion.div className="absolute top-6 text-lg" style={{ left: '35%' }}
-            animate={{ x: [0, 30, 0] }} transition={{ duration: 26, repeat: Infinity, ease: 'linear' }}>
-            {timeOfDay === 'night' ? '' : '☁️'}
-          </motion.div>
-
-          {/* Rolling green hills */}
-          <div className="absolute bottom-0 left-0 right-0 h-[45%]">
-            <div className="absolute bottom-0 left-[-10%] w-[55%] h-[80%] rounded-t-full"
-              style={{ background: timeOfDay === 'night' ? '#2D4A22' : '#7FB069', opacity: 0.5 }} />
-            <div className="absolute bottom-0 right-[-8%] w-[50%] h-[70%] rounded-t-full"
-              style={{ background: timeOfDay === 'night' ? '#264218' : '#6A9F55', opacity: 0.6 }} />
-            <div className="absolute bottom-0 left-[15%] w-[65%] h-[60%] rounded-t-full"
-              style={{ background: timeOfDay === 'night' ? '#355E28' : '#8BC070', opacity: 0.7 }} />
+        {/* Sun/Moon */}
+        {isNight ? (
+          <div className="absolute top-[8%] right-[12%] w-12 h-12 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-gray-200 to-gray-300"
+            style={{ boxShadow: '0 0 30px rgba(255,255,255,0.2), 0 0 60px rgba(255,255,255,0.1)' }}>
+            {/* Crater dots */}
+            <div className="absolute top-2 left-3 w-2 h-2 rounded-full bg-gray-300/50" />
+            <div className="absolute top-5 right-2 w-1.5 h-1.5 rounded-full bg-gray-300/40" />
+            <div className="absolute bottom-3 left-5 w-1 h-1 rounded-full bg-gray-300/30" />
           </div>
+        ) : (
+          <div className="absolute top-[6%] right-[12%] w-14 h-14 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-spark to-ember"
+            style={{ boxShadow: '0 0 40px #FFD166, 0 0 80px #FFD16644' }} />
+        )}
 
-          {/* Golden winding path */}
-          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 420" preserveAspectRatio="none">
-            <path
-              d="M200,400 C180,350 130,320 170,280 C210,240 270,260 240,210 C210,160 150,150 190,110"
-              fill="none"
-              stroke={timeOfDay === 'night' ? '#FFD16644' : '#FFD16688'}
-              strokeWidth="6"
-              strokeLinecap="round"
-              strokeDasharray="10 8"
-            />
-          </svg>
+        {/* Stars (night) — actual visible dots that twinkle */}
+        {isNight && (
+          <>
+            {[...Array(25)].map((_, i) => (
+              <div
+                key={`star-${i}`}
+                className="absolute rounded-full bg-white"
+                style={{
+                  width: i % 4 === 0 ? 3 : i % 3 === 0 ? 2 : 1.5,
+                  height: i % 4 === 0 ? 3 : i % 3 === 0 ? 2 : 1.5,
+                  top: `${3 + (i * 7) % 35}%`,
+                  left: `${2 + (i * 13) % 95}%`,
+                  animation: `twinkle ${2 + (i % 3)}s ease-in-out ${i * 0.3}s infinite`,
+                }}
+              />
+            ))}
+          </>
+        )}
 
-          {/* Landscape nav items */}
-          {landscapeItems.map((item, i) => (
-            <motion.div
-              key={item.href}
-              className="absolute"
-              style={{ top: item.top, left: item.left, transform: 'translate(-50%, -50%)', zIndex: 10 }}
-              initial={{ opacity: 0, scale: 0 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.1 + i * 0.07, type: 'spring', stiffness: 200 }}
-            >
-              <Link href={item.href} className="flex flex-col items-center group">
-                <motion.div
-                  className="text-3xl mb-0.5"
-                  animate={{ y: [0, -3, 0] }}
-                  transition={{ duration: 2.5 + i * 0.3, repeat: Infinity }}
-                  whileHover={{ scale: 1.2 }}
-                >
-                  {item.emoji}
-                </motion.div>
-                <span className="font-display text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-sm whitespace-nowrap"
-                  style={{
-                    background: timeOfDay === 'night' ? 'rgba(26,20,40,0.8)' : 'rgba(255,255,255,0.85)',
-                    color: timeOfDay === 'night' ? '#FFD166' : '#1A1428',
-                  }}>
-                  {item.label}
-                </span>
-              </Link>
-            </motion.div>
-          ))}
+        {/* Clouds — drift across the sky (CSS animation for smooth long movement) */}
+        {!isNight && (
+          <>
+            <div className="absolute top-[8%] text-4xl md:text-5xl opacity-80"
+              style={{ animation: 'cloudDrift 35s linear infinite', animationDelay: '-5s' }}>☁️</div>
+            <div className="absolute top-[15%] text-3xl md:text-4xl opacity-60"
+              style={{ animation: 'cloudDriftReverse 42s linear infinite', animationDelay: '-12s' }}>☁️</div>
+            <div className="absolute top-[6%] text-2xl md:text-3xl opacity-50"
+              style={{ animation: 'cloudDrift 50s linear infinite', animationDelay: '-25s' }}>☁️</div>
+            <div className="absolute top-[20%] text-3xl opacity-40"
+              style={{ animation: 'cloudDriftReverse 38s linear infinite', animationDelay: '-18s' }}>☁️</div>
+          </>
+        )}
 
-          {/* Ember by the campfire */}
+        {/* Rolling green hills — three layers for depth */}
+        <div className="absolute bottom-0 left-0 right-0" style={{ height: '55%' }}>
+          {/* Distant hill */}
+          <div className="absolute bottom-0 left-[-15%] w-[70%] h-[85%] rounded-t-[50%]"
+            style={{ background: isNight ? '#1E3A16' : '#6A9F55', opacity: 0.4 }} />
+          <div className="absolute bottom-0 right-[-12%] w-[65%] h-[75%] rounded-t-[50%]"
+            style={{ background: isNight ? '#1B3514' : '#5C8F48', opacity: 0.5 }} />
+          {/* Mid hill */}
+          <div className="absolute bottom-0 left-[10%] w-[80%] h-[65%] rounded-t-[50%]"
+            style={{ background: isNight ? '#264218' : '#7FB069', opacity: 0.65 }} />
+          {/* Foreground hill */}
+          <div className="absolute bottom-0 left-[-5%] w-[110%] h-[50%] rounded-t-[40%]"
+            style={{ background: isNight ? '#2D4A22' : '#8BC070', opacity: 0.8 }} />
+        </div>
+
+        {/* Golden winding path — thicker, visible */}
+        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid slice">
+          <path
+            d="M500,680 C470,600 380,560 430,480 C480,400 600,420 550,340 C500,260 380,240 440,170 C500,100 600,130 570,80"
+            fill="none"
+            stroke={isNight ? '#FFD16633' : '#FFD16688'}
+            strokeWidth="8"
+            strokeLinecap="round"
+            strokeDasharray="16 12"
+          />
+        </svg>
+
+        {/* Landscape navigation items — LARGE icons with glow */}
+        {landscapeItems.map((item, i) => (
           <motion.div
-            className="absolute text-3xl"
-            style={{ top: '68%', left: '40%', zIndex: 10 }}
-            animate={{ y: [0, -4, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
+            key={item.href}
+            className="absolute z-10"
+            style={{ top: item.top, left: item.left, transform: 'translate(-50%, -50%)' }}
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.1 + i * 0.07, type: 'spring', stiffness: 200 }}
           >
-            🦊
+            <Link href={item.href} className="flex flex-col items-center group">
+              <motion.div
+                className="w-14 h-14 md:w-[72px] md:h-[72px] rounded-full flex items-center justify-center"
+                style={{
+                  background: isNight ? 'rgba(26,20,40,0.7)' : 'rgba(255,255,255,0.7)',
+                  backdropFilter: 'blur(8px)',
+                  animation: 'pulseGlow 3s ease-in-out infinite',
+                  animationDelay: `${i * 0.4}s`,
+                }}
+                animate={{ y: [0, -4, 0] }}
+                transition={{ duration: 2.5 + i * 0.3, repeat: Infinity }}
+                whileHover={{ scale: 1.15 }}
+              >
+                <span className="text-3xl md:text-4xl">{item.emoji}</span>
+              </motion.div>
+              <span className="font-display text-xs md:text-sm font-bold mt-1 px-2 py-0.5 rounded-full whitespace-nowrap"
+                style={{
+                  background: isNight ? 'rgba(26,20,40,0.85)' : 'rgba(255,255,255,0.9)',
+                  color: isNight ? '#FFD166' : '#1A1428',
+                  textShadow: isNight ? 'none' : '0 1px 2px rgba(0,0,0,0.1)',
+                }}>
+                {item.label}
+              </span>
+            </Link>
           </motion.div>
+        ))}
 
-          {/* Campfire glow (brighter at night) */}
-          {timeOfDay === 'night' && (
-            <motion.div
-              className="absolute w-16 h-16 rounded-full"
-              style={{ top: '58%', left: '44%', transform: 'translate(-50%, -50%)' }}
-              animate={{ boxShadow: ['0 0 20px #FF8C4255', '0 0 40px #FF8C4244', '0 0 20px #FF8C4255'] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            />
-          )}
-        </div>
-
-        {/* Ember daily message */}
-        <div className="spark-card p-5 text-center mb-4"
-          style={{
-            background: timeOfDay === 'night'
-              ? 'linear-gradient(135deg, #2A1F3D, #1A1428)'
-              : 'linear-gradient(135deg, #FFF8E7, #FFD16622)',
-            border: timeOfDay === 'night' ? '2px solid rgba(255,209,102,0.2)' : undefined,
-          }}>
-          <p className="text-3xl mb-2">🦊</p>
-          <p className={`font-body text-sm leading-relaxed italic ${timeOfDay === 'night' ? 'text-amber-100/80' : 'text-text'}`}>
-            &ldquo;{dailyMessage}&rdquo;
-          </p>
-        </div>
-
-        {/* Quick stats */}
-        <div className="flex gap-3 mb-8">
-          <div className="flex-1 spark-card p-3 text-center"
-            style={{
-              background: timeOfDay === 'night' ? '#2A1F3D' : 'white',
-              border: timeOfDay === 'night' ? '2px solid rgba(255,209,102,0.15)' : undefined,
-            }}>
-            <span className="text-xl block">🏅</span>
-            <span className={`font-display text-lg font-bold ${timeOfDay === 'night' ? 'text-spark' : 'text-ember'}`}>{badgeCount}</span>
-            <span className={`block text-xs font-body ${timeOfDay === 'night' ? 'text-amber-100/50' : 'text-text-muted'}`}>Badges</span>
+        {/* Animated campfire flame (CSS art, not emoji) */}
+        <div className="absolute z-10" style={{ top: '66%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+          <div className="relative w-10 h-12">
+            {/* Main flame */}
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-8 rounded-[50%_50%_50%_50%/60%_60%_40%_40%]"
+              style={{
+                background: 'radial-gradient(ellipse at bottom, #FF8C42, #FFD166, transparent)',
+                animation: 'flicker 0.5s ease-in-out infinite alternate',
+              }} />
+            {/* Inner flame */}
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3 h-6 rounded-[50%_50%_50%_50%/60%_60%_40%_40%]"
+              style={{
+                background: 'radial-gradient(ellipse at bottom, #FFD166, #FFF8E7, transparent)',
+                animation: 'flickerAlt 0.4s ease-in-out infinite alternate',
+              }} />
+            {/* Glow */}
+            <div className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 w-12 h-6 rounded-full"
+              style={{ background: 'radial-gradient(ellipse, #FF8C4244, transparent)', filter: 'blur(4px)' }} />
           </div>
-          <div className="flex-1 spark-card p-3 text-center"
+          {/* Logs */}
+          <div className="flex justify-center gap-0.5 -mt-1">
+            <div className="w-6 h-1.5 bg-amber-800 rounded-full rotate-[-15deg]" />
+            <div className="w-6 h-1.5 bg-amber-900 rounded-full rotate-[15deg] -ml-2" />
+          </div>
+        </div>
+
+        {/* Ember the fox — CSS figure, not emoji */}
+        <div className="absolute z-10" style={{ top: '68%', left: '43%', transform: 'translate(-50%, -50%)' }}>
+          <div style={{ animation: 'emberBounce 3s ease-in-out infinite' }}>
+            {/* Fox body */}
+            <div className="relative">
+              {/* Body */}
+              <div className="w-8 h-6 bg-gradient-to-b from-amber-400 to-orange-500 rounded-[60%_60%_40%_40%]" />
+              {/* Head */}
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-7 h-6 bg-gradient-to-b from-amber-300 to-orange-400 rounded-full">
+                {/* Ears */}
+                <div className="absolute -top-2 left-0.5 w-0 h-0" style={{
+                  borderLeft: '4px solid transparent', borderRight: '4px solid transparent',
+                  borderBottom: '6px solid #F59E0B',
+                }} />
+                <div className="absolute -top-2 right-0.5 w-0 h-0" style={{
+                  borderLeft: '4px solid transparent', borderRight: '4px solid transparent',
+                  borderBottom: '6px solid #F59E0B',
+                }} />
+                {/* Eyes */}
+                <div className="absolute top-2 left-1.5 w-1 h-1 rounded-full bg-night" />
+                <div className="absolute top-2 right-1.5 w-1 h-1 rounded-full bg-night" />
+                {/* Nose */}
+                <div className="absolute top-3.5 left-1/2 -translate-x-1/2 w-1 h-0.5 rounded-full bg-night" />
+                {/* White muzzle */}
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-2 bg-white/80 rounded-b-full" />
+              </div>
+              {/* Tail */}
+              <div className="absolute -right-3 top-0 w-4 h-2 bg-gradient-to-r from-orange-400 to-amber-300 rounded-full rotate-[-20deg]">
+                <div className="absolute right-0 top-0 w-1.5 h-1.5 bg-white/80 rounded-full" />
+              </div>
+              {/* Paws */}
+              <div className="absolute bottom-[-3px] left-1 w-2 h-1.5 bg-orange-400 rounded-b-full" />
+              <div className="absolute bottom-[-3px] right-1 w-2 h-1.5 bg-orange-400 rounded-b-full" />
+              {/* Bandage on paw */}
+              <div className="absolute bottom-[-3px] left-0.5 w-2.5 h-0.5 bg-white rounded-full" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Below landscape — Ember message + stats */}
+      <div className="spark-container pt-6">
+        <div className="max-w-2xl mx-auto">
+          {/* Ember daily message */}
+          <div className="spark-card p-5 text-center mb-4"
             style={{
-              background: timeOfDay === 'night' ? '#2A1F3D' : 'white',
-              border: timeOfDay === 'night' ? '2px solid rgba(255,209,102,0.15)' : undefined,
+              background: isNight
+                ? 'linear-gradient(135deg, #2A1F3D, #1A1428)'
+                : 'linear-gradient(135deg, #FFF8E7, #FFD16622)',
+              border: isNight ? '2px solid rgba(255,209,102,0.2)' : undefined,
             }}>
-            <span className="text-xl block">📖</span>
-            <span className={`font-display text-lg font-bold ${timeOfDay === 'night' ? 'text-spark' : 'text-ember'}`}>{storyCount}</span>
-            <span className={`block text-xs font-body ${timeOfDay === 'night' ? 'text-amber-100/50' : 'text-text-muted'}`}>Stories</span>
+            <p className="text-3xl mb-2">🦊</p>
+            <p className={`font-body text-sm leading-relaxed italic ${isNight ? 'text-amber-100/80' : 'text-text'}`}>
+              &ldquo;{dailyMessage}&rdquo;
+            </p>
+          </div>
+
+          {/* Quick stats */}
+          <div className="flex gap-3 mb-8">
+            <div className="flex-1 spark-card p-4 text-center"
+              style={{
+                background: isNight ? '#2A1F3D' : 'white',
+                border: isNight ? '2px solid rgba(255,209,102,0.15)' : undefined,
+              }}>
+              <span className="text-2xl block">🏅</span>
+              <span className={`font-display text-xl font-bold ${isNight ? 'text-spark' : 'text-ember'}`}>{badgeCount}</span>
+              <span className={`block text-xs font-body ${isNight ? 'text-amber-100/50' : 'text-text-muted'}`}>Badges</span>
+            </div>
+            <div className="flex-1 spark-card p-4 text-center"
+              style={{
+                background: isNight ? '#2A1F3D' : 'white',
+                border: isNight ? '2px solid rgba(255,209,102,0.15)' : undefined,
+              }}>
+              <span className="text-2xl block">📖</span>
+              <span className={`font-display text-xl font-bold ${isNight ? 'text-spark' : 'text-ember'}`}>{storyCount}</span>
+              <span className={`block text-xs font-body ${isNight ? 'text-amber-100/50' : 'text-text-muted'}`}>Stories</span>
+            </div>
           </div>
         </div>
       </div>

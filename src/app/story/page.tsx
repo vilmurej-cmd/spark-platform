@@ -17,169 +17,187 @@ const LOADING_MESSAGES = [
   "Putting on the finishing touches...",
 ];
 
-/* ---- Mood-based color palettes for illustrations ---- */
-function getMoodTheme(mood: string): { sky: string[]; hasStars: boolean; hasTrees: boolean; particleType: 'sparkle' | 'feather' | 'stars' | 'glow'; groundColor: string } {
-  const m = mood.toLowerCase();
-  if (m.includes('joyful') || m.includes('triumphant')) {
-    return { sky: ['#FFD166', '#87CEEB'], hasStars: false, hasTrees: false, particleType: 'sparkle', groundColor: '#7FB069' };
-  }
-  if (m.includes('concern') || m.includes('empathy')) {
-    return { sky: ['#FF8C42', '#C4A6D6'], hasStars: false, hasTrees: false, particleType: 'glow', groundColor: '#8BC070' };
-  }
-  if (m.includes('magical') || m.includes('empowering')) {
-    return { sky: ['#1E3A5F', '#9B72CF'], hasStars: true, hasTrees: false, particleType: 'sparkle', groundColor: '#5C8F48' };
-  }
-  if (m.includes('peaceful') || m.includes('proud')) {
-    return { sky: ['#1A1428', '#2A1F3D'], hasStars: true, hasTrees: false, particleType: 'stars', groundColor: '#355E28' };
-  }
-  if (m.includes('warm') || m.includes('reassuring')) {
-    return { sky: ['#FFF8E7', '#FFB3C1'], hasStars: false, hasTrees: false, particleType: 'glow', groundColor: '#8BC070' };
-  }
-  if (m.includes('brave') || m.includes('kind')) {
-    return { sky: ['#FFD166', '#7FB069'], hasStars: false, hasTrees: true, particleType: 'sparkle', groundColor: '#6A9F55' };
-  }
-  if (m.includes('calm') || m.includes('connected')) {
-    return { sky: ['#C1E8C1', '#C4A6D6'], hasStars: false, hasTrees: true, particleType: 'feather', groundColor: '#7FB069' };
-  }
-  // Default
-  return { sky: ['#87CEEB', '#FFD166'], hasStars: false, hasTrees: false, particleType: 'sparkle', groundColor: '#7FB069' };
-}
+/* ---- Rich Scene Illustration Component ---- */
+function SceneIllustration({ page, nightMode }: { page: StoryPage; nightMode: boolean }) {
+  const mood = page.illustration.mood.toLowerCase();
+  const colors = page.illustration.colors;
 
-/* ---- Rich Story Illustration Component ---- */
-function StoryIllustration({ page, nightMode }: { page: StoryPage; nightMode: boolean }) {
-  const theme = getMoodTheme(page.illustration.mood);
-  const sky0 = nightMode ? '#1A1428' : theme.sky[0];
-  const sky1 = nightMode ? '#2A1F3D' : theme.sky[1];
+  // 1. Sky — mood-based gradient
+  let skyGradient: string;
+  let isDark = false;
+  if (mood.includes('joyful') || mood.includes('adventure') || mood.includes('triumphant')) {
+    skyGradient = 'linear-gradient(180deg, #87CEEB 0%, #B0D4E8 50%, #E0F7FA 100%)';
+  } else if (mood.includes('concern') || mood.includes('discovery') || mood.includes('warm') || mood.includes('reassuring')) {
+    skyGradient = 'linear-gradient(180deg, #FFB347 0%, #FFECD2 50%, #FFF8E7 100%)';
+  } else if (mood.includes('triumph') || mood.includes('celebration') || mood.includes('empowering')) {
+    skyGradient = 'linear-gradient(180deg, #FFD700 0%, #FFE88A 50%, #FFF8E1 100%)';
+  } else if (mood.includes('peaceful') || mood.includes('night') || mood.includes('calm') || mood.includes('proud')) {
+    skyGradient = 'linear-gradient(180deg, #1A1428 0%, #2D1B69 50%, #3D2C80 100%)';
+    isDark = true;
+  } else if (mood.includes('brave') || mood.includes('action') || mood.includes('kind')) {
+    skyGradient = 'linear-gradient(180deg, #FF6B8A 0%, #FFB347 50%, #FFECD2 100%)';
+  } else if (mood.includes('magical') || mood.includes('connected')) {
+    skyGradient = 'linear-gradient(180deg, #1E3A5F 0%, #9B72CF 50%, #C4A6D6 100%)';
+    isDark = true;
+  } else {
+    skyGradient = 'linear-gradient(180deg, #87CEEB 0%, #FFD166 100%)';
+  }
+
+  if (nightMode) {
+    skyGradient = 'linear-gradient(180deg, #1A1428 0%, #2A1F3D 100%)';
+    isDark = true;
+  }
+
+  // Ground color
+  const groundColor = nightMode ? '#264218' : isDark ? '#2D4A22' : '#7FB069';
+  const groundColor2 = nightMode ? '#1E3A16' : isDark ? '#264218' : '#5A8A3C';
 
   return (
-    <div className="relative w-full h-64 overflow-hidden" style={{ background: `linear-gradient(to bottom, ${sky0}, ${sky1})` }}>
-      {/* Layer 1: Sky + Stars */}
-      {(theme.hasStars || nightMode) && (
+    <div className="relative w-full h-56 md:h-72 overflow-hidden rounded-t-2xl"
+      style={{ background: skyGradient }}>
+
+      {/* 3. Sun or Moon */}
+      {isDark ? (
+        <div className="absolute top-3 right-6 w-8 h-8 rounded-full bg-gradient-to-br from-gray-200 to-gray-100"
+          style={{ boxShadow: '0 0 15px rgba(255,255,255,0.25)' }}>
+          {/* Crater dots */}
+          <div className="absolute top-1.5 left-2 w-1 h-1 rounded-full bg-gray-300/50" />
+          <div className="absolute top-4 right-1.5 w-0.5 h-0.5 rounded-full bg-gray-300/40" />
+        </div>
+      ) : (
+        <div className="absolute top-3 right-6 w-10 h-10 rounded-full bg-gradient-to-br from-spark to-ember"
+          style={{ boxShadow: '0 0 20px #FFD166, 0 0 40px #FFD16644' }} />
+      )}
+
+      {/* Stars for dark skies */}
+      {isDark && (
         <>
-          {[...Array(8)].map((_, i) => (
-            <motion.div
-              key={`star-${i}`}
-              className="absolute w-1 h-1 rounded-full"
+          {[...Array(12)].map((_, i) => (
+            <div key={`star-${i}`} className="absolute rounded-full bg-white"
               style={{
-                background: nightMode ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.9)',
-                top: `${5 + Math.random() * 30}%`,
-                left: `${5 + Math.random() * 90}%`,
-              }}
-              animate={{ opacity: [0.3, 0.9, 0.3], scale: [0.8, 1.2, 0.8] }}
-              transition={{ duration: 2 + Math.random() * 2, repeat: Infinity, delay: i * 0.3 }}
-            />
+                width: i % 3 === 0 ? 2 : 1.5,
+                height: i % 3 === 0 ? 2 : 1.5,
+                top: `${5 + (i * 7) % 35}%`,
+                left: `${3 + (i * 11) % 88}%`,
+                animation: `twinkle ${2 + (i % 3)}s ease-in-out ${i * 0.3}s infinite`,
+              }} />
           ))}
         </>
       )}
 
-      {/* Moon for night/peaceful moods */}
-      {(theme.sky[0] === '#1A1428' || nightMode) && (
-        <div className="absolute top-3 right-6 w-8 h-8 rounded-full bg-gradient-to-br from-gray-200 to-gray-100 opacity-80"
-          style={{ boxShadow: '0 0 12px rgba(255,255,255,0.3)' }} />
-      )}
+      {/* 2. Ground — rolling green hills */}
+      <div className="absolute bottom-0 left-[-10%] w-[60%] h-[38%] rounded-t-[50%]"
+        style={{ background: groundColor2, opacity: 0.6 }} />
+      <div className="absolute bottom-0 right-[-8%] w-[55%] h-[33%] rounded-t-[50%]"
+        style={{ background: groundColor, opacity: 0.5 }} />
+      <div className="absolute bottom-0 left-[5%] w-[90%] h-[28%] rounded-t-[40%]"
+        style={{ background: groundColor, opacity: 0.75 }} />
 
-      {/* Layer 2: Ground/Setting */}
-      <div className="absolute bottom-0 left-[-10%] w-[60%] h-[35%] rounded-t-[50%]"
-        style={{ background: nightMode ? '#264218' : theme.groundColor, opacity: 0.6 }} />
-      <div className="absolute bottom-0 right-[-8%] w-[55%] h-[30%] rounded-t-[50%]"
-        style={{ background: nightMode ? '#2D4A22' : theme.groundColor, opacity: 0.5 }} />
-
-      {/* Trees for forest moods */}
-      {theme.hasTrees && !nightMode && (
+      {/* Trees for forest/brave/calm moods */}
+      {(mood.includes('brave') || mood.includes('calm') || mood.includes('kind') || mood.includes('connected')) && !nightMode && (
         <>
-          <div className="absolute bottom-[28%] left-[10%]">
-            <div className="w-4 h-6 rounded-t-full" style={{ background: '#5C8F48' }} />
-            <div className="w-1.5 h-3 mx-auto" style={{ background: '#8B6F47' }} />
-          </div>
-          <div className="absolute bottom-[25%] right-[15%]">
-            <div className="w-5 h-7 rounded-t-full" style={{ background: '#7FB069' }} />
-            <div className="w-1.5 h-3 mx-auto" style={{ background: '#8B6F47' }} />
-          </div>
-          <div className="absolute bottom-[30%] left-[35%]">
-            <div className="w-3.5 h-5 rounded-t-full" style={{ background: '#6A9F55' }} />
-            <div className="w-1 h-2.5 mx-auto" style={{ background: '#8B6F47' }} />
-          </div>
-        </>
-      )}
-
-      {/* Layer 3: Mood particles */}
-      {theme.particleType === 'sparkle' && (
-        <>
-          {[...Array(5)].map((_, i) => (
-            <motion.div
-              key={`sp-${i}`}
-              className="absolute w-1.5 h-1.5 rounded-full"
-              style={{
-                background: nightMode ? '#FFD16688' : page.illustration.colors[i % page.illustration.colors.length],
-                left: `${15 + i * 18}%`,
-                top: `${20 + (i % 3) * 15}%`,
-              }}
-              animate={{ opacity: [0.3, 0.8, 0.3], scale: [0.5, 1.2, 0.5], y: [0, -8, 0] }}
-              transition={{ duration: 2, repeat: Infinity, delay: i * 0.4 }}
-            />
+          {[
+            { left: '8%', bottom: '25%', w: 12, h: 18 },
+            { left: '82%', bottom: '22%', w: 14, h: 22 },
+            { left: '30%', bottom: '28%', w: 10, h: 15 },
+          ].map((t, i) => (
+            <div key={`tree-${i}`} className="absolute" style={{ left: t.left, bottom: t.bottom }}>
+              <div className="rounded-t-full mx-auto" style={{
+                width: t.w, height: t.h, background: isDark ? '#2D4A22' : '#5C8F48',
+              }} />
+              <div className="mx-auto" style={{ width: 3, height: 6, background: '#8B6F47' }} />
+            </div>
           ))}
         </>
       )}
 
-      {theme.particleType === 'feather' && (
-        <>
-          {[...Array(3)].map((_, i) => (
-            <motion.div
-              key={`ft-${i}`}
-              className="absolute w-2 h-4 rounded-full bg-white/50"
-              style={{ left: `${20 + i * 25}%`, top: `${15 + i * 10}%` }}
-              animate={{ y: [0, 30, 60], opacity: [0.6, 0.3, 0], rotate: [0, 20, -10] }}
-              transition={{ duration: 4, repeat: Infinity, delay: i * 1.2 }}
-            />
-          ))}
-        </>
-      )}
-
-      {theme.particleType === 'stars' && (
-        <>
-          {[...Array(5)].map((_, i) => (
-            <motion.div
-              key={`st-${i}`}
-              className="absolute w-1 h-1 rounded-full bg-white"
-              style={{ left: `${10 + i * 20}%`, top: `${10 + (i % 3) * 12}%` }}
-              animate={{ opacity: [0.2, 0.8, 0.2] }}
-              transition={{ duration: 2.5, repeat: Infinity, delay: i * 0.5 }}
-            />
-          ))}
-        </>
-      )}
-
-      {theme.particleType === 'glow' && (
-        <>
-          {[...Array(4)].map((_, i) => (
-            <motion.div
-              key={`gl-${i}`}
-              className="absolute w-3 h-3 rounded-full"
-              style={{
-                background: nightMode ? 'rgba(255,209,102,0.2)' : `${page.illustration.colors[i % page.illustration.colors.length]}44`,
-                left: `${15 + i * 22}%`,
-                top: `${25 + (i % 2) * 20}%`,
-              }}
-              animate={{ scale: [1, 1.5, 1], opacity: [0.2, 0.5, 0.2] }}
-              transition={{ duration: 3, repeat: Infinity, delay: i * 0.6 }}
-            />
-          ))}
-        </>
-      )}
-
-      {/* Layer 4: Central figure */}
-      <div className="absolute bottom-[20%] left-1/2 -translate-x-1/2 flex items-end gap-2">
+      {/* 4. Character (center, standing on ground) */}
+      <div className="absolute bottom-[18%] left-1/2 -translate-x-1/2 flex items-end gap-3">
         {/* Child figure */}
         <div className="flex flex-col items-center">
-          <div className="w-6 h-6 rounded-full" style={{ background: '#D4A574' }} />
-          <div className="w-5 h-8 rounded-lg mt-0.5" style={{ background: page.illustration.colors[0] || '#5DADE2' }} />
+          {/* Head */}
+          <div className="w-8 h-8 rounded-full relative" style={{ background: '#D4A574' }}>
+            {/* Eyes */}
+            <div className="absolute top-3 left-1.5 w-1 h-1 rounded-full bg-night" />
+            <div className="absolute top-3 right-1.5 w-1 h-1 rounded-full bg-night" />
+            {/* Smile */}
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-2 h-1 border-b-[1.5px] border-night rounded-b-full" />
+            {/* Hair */}
+            <div className="absolute -top-1 left-0 right-0 h-3 rounded-t-full"
+              style={{ background: '#3D2C1E' }} />
+          </div>
+          {/* Body */}
+          <div className="w-7 h-10 rounded-lg mt-0.5" style={{ background: colors[0] || '#5DADE2' }}>
+            {/* Cape */}
+            <div className="absolute -right-1 top-0 w-3 h-8 rounded-r-lg opacity-70"
+              style={{ background: colors[1] || '#FF8C42' }} />
+          </div>
+          {/* Legs */}
+          <div className="flex gap-1 -mt-0.5">
+            <div className="w-2.5 h-4 rounded-b-md" style={{ background: '#4A6FA5' }} />
+            <div className="w-2.5 h-4 rounded-b-md" style={{ background: '#4A6FA5' }} />
+          </div>
         </div>
-        {/* Companion */}
-        <div className="w-4 h-4 rounded-full mb-1" style={{ background: page.illustration.colors[1] || '#FF8C42', opacity: 0.7 }} />
+
+        {/* 5. Companion */}
+        <div className="mb-1 relative">
+          {/* Animal body (fox/dog shape) */}
+          <div className="w-6 h-4 rounded-[60%] relative" style={{ background: colors[1] || '#FF8C42', opacity: 0.85 }}>
+            {/* Ears */}
+            <div className="absolute -top-1.5 left-0.5 w-0 h-0" style={{
+              borderLeft: '2px solid transparent', borderRight: '2px solid transparent',
+              borderBottom: `4px solid ${colors[1] || '#FF8C42'}`,
+            }} />
+            <div className="absolute -top-1.5 right-0.5 w-0 h-0" style={{
+              borderLeft: '2px solid transparent', borderRight: '2px solid transparent',
+              borderBottom: `4px solid ${colors[1] || '#FF8C42'}`,
+            }} />
+            {/* Eye */}
+            <div className="absolute top-1 left-1 w-0.5 h-0.5 rounded-full bg-night" />
+            {/* Tail */}
+            <div className="absolute top-0 -right-2 w-3 h-1.5 rounded-full"
+              style={{ background: colors[1] || '#FF8C42', opacity: 0.7 }} />
+          </div>
+        </div>
       </div>
 
-      {/* Illustration description */}
-      <p className="absolute bottom-2 left-3 right-3 text-[10px] text-white/40 font-body italic text-center">
+      {/* 6. Condition/mood themed element */}
+      {mood.includes('magical') && (
+        <motion.div className="absolute top-[15%] left-[20%] text-2xl"
+          animate={{ y: [0, -5, 0], rotate: [0, 10, -10, 0] }}
+          transition={{ duration: 3, repeat: Infinity }}>
+          🐉
+        </motion.div>
+      )}
+
+      {/* 7. Mood particles */}
+      {[...Array(8)].map((_, i) => {
+        const isJoy = mood.includes('joyful') || mood.includes('triumph') || mood.includes('celebration');
+        const isPeace = mood.includes('peaceful') || mood.includes('calm');
+        const isAdventure = mood.includes('adventure') || mood.includes('brave');
+        return (
+          <div
+            key={`particle-${i}`}
+            className="absolute rounded-full"
+            style={{
+              width: 3,
+              height: 3,
+              background: isJoy ? '#FFD166' : isPeace ? '#FFFFFF' : isAdventure ? '#FFD166' : colors[0] || '#FFD166',
+              left: `${8 + (i * 13) % 84}%`,
+              top: `${10 + (i * 11) % 50}%`,
+              opacity: 0.6,
+              animation: isPeace
+                ? `float ${3 + i * 0.4}s ease-in-out ${i * 0.3}s infinite`
+                : isJoy
+                  ? `particleRise ${4 + i * 0.5}s ease-out ${i * 0.4}s infinite`
+                  : `twinkle ${2 + i * 0.3}s ease-in-out ${i * 0.2}s infinite`,
+            }}
+          />
+        );
+      })}
+
+      {/* Illustration description (subtle) */}
+      <p className="absolute bottom-2 left-3 right-3 text-[10px] text-white/30 font-body italic text-center">
         {page.illustration.description}
       </p>
     </div>
@@ -332,9 +350,9 @@ export default function StoryPage() {
   if (phase === 'form') {
     return (
       <div className="min-h-screen bg-cream pb-24">
-        <div className="max-w-lg mx-auto px-4 py-6">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <h1 className="text-3xl font-display font-bold text-center mb-2 bg-gradient-to-r from-ember to-heart bg-clip-text text-transparent">
+        <div className="spark-container py-6">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-2xl mx-auto">
+            <h1 className="text-3xl md:text-4xl font-display font-bold text-center mb-2 bg-gradient-to-r from-ember to-heart bg-clip-text text-transparent">
               My Story
             </h1>
             <p className="text-center font-body text-text-light mb-6">
@@ -416,7 +434,7 @@ export default function StoryPage() {
               {/* Story Tone */}
               <div className="spark-card p-4">
                 <label className="block font-display font-semibold text-text mb-2">Story Tone</label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   {STORY_TONES.map(t => (
                     <button key={t.value} onClick={() => setStoryTone(t.value)}
                       className={`p-3 rounded-xl text-left transition-all ${storyTone === t.value ? 'bg-gradient-to-br from-ember/20 to-heart/20 border-2 border-ember shadow-md' : 'bg-white border-2 border-spark/20 hover:border-ember/40'}`}>
@@ -487,110 +505,112 @@ export default function StoryPage() {
   return (
     <div className={`min-h-screen pb-24 transition-colors duration-500 ${nightMode ? 'night-mode' : ''}`}
       style={{ background: nightMode ? '#1A1428' : '#FFF8E7' }}>
-      <div className="max-w-lg mx-auto px-4 py-4">
-        {/* Controls bar */}
-        <div className="flex items-center justify-between mb-4">
-          <button onClick={() => { setPhase('form'); window.speechSynthesis.cancel(); }}
-            className="text-sm font-display text-text-muted hover:text-ember transition-colors min-h-[48px] flex items-center">
-            New Story
-          </button>
-          <div className="flex gap-2">
-            <button onClick={readAloud}
-              className={`px-3 py-1.5 rounded-full text-sm font-display transition-all min-h-[48px] ${isReading ? 'bg-heart text-white' : 'bg-white border border-spark/30'}`}>
-              {isReading ? 'Stop' : 'Read to Me'}
+      <div className="spark-container py-4">
+        <div className="max-w-2xl mx-auto">
+          {/* Controls bar */}
+          <div className="flex items-center justify-between mb-4">
+            <button onClick={() => { setPhase('form'); window.speechSynthesis.cancel(); }}
+              className="text-sm font-display text-text-muted hover:text-ember transition-colors min-h-[48px] flex items-center">
+              New Story
             </button>
-            <button onClick={() => setNightMode(!nightMode)}
-              className="px-3 py-1.5 rounded-full text-sm font-display bg-white border border-spark/30 min-h-[48px]">
-              {nightMode ? '☀️' : '🌙'}
+            <div className="flex gap-2">
+              <button onClick={readAloud}
+                className={`px-3 py-1.5 rounded-full text-sm font-display transition-all min-h-[48px] ${isReading ? 'bg-heart text-white' : 'bg-white border border-spark/30'}`}>
+                {isReading ? 'Stop' : 'Read to Me'}
+              </button>
+              <button onClick={() => setNightMode(!nightMode)}
+                className="px-3 py-1.5 rounded-full text-sm font-display bg-white border border-spark/30 min-h-[48px]">
+                {nightMode ? '☀️' : '🌙'}
+              </button>
+            </div>
+          </div>
+
+          {/* Page display with 3D perspective page turn */}
+          <AnimatePresence mode="wait">
+            <motion.div key={currentPage}
+              initial={{ opacity: 0, rotateY: 15, x: 40 }}
+              animate={{ opacity: 1, rotateY: 0, x: 0 }}
+              exit={{ opacity: 0, rotateY: -15, x: -40 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+              style={{ perspective: 800, transformStyle: 'preserve-3d' }}
+              className="rounded-3xl overflow-hidden shadow-xl mb-6"
+            >
+              <div style={{ background: nightMode ? '#2A2438' : 'white' }}>
+                {/* Illustration area */}
+                {isCover && (
+                  <div className="h-56 md:h-72 flex items-center justify-center relative overflow-hidden rounded-t-2xl"
+                    style={{ background: nightMode ? 'linear-gradient(135deg, #FF8C4222, #FFD16622)' : 'linear-gradient(135deg, #FF8C4233, #FFD16633, #FF6B8A22)' }}>
+                    <div className="text-center px-6">
+                      <motion.div className="text-6xl mb-3" animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 3, repeat: Infinity }}>
+                        📖✨
+                      </motion.div>
+                      <h1 className={`font-display font-bold text-2xl ${nightMode ? 'text-cream' : 'text-text'}`}>{story.title}</h1>
+                      <p className={`font-body text-sm mt-2 italic ${nightMode ? 'text-cream/60' : 'text-text-muted'}`}>{story.dedication}</p>
+                    </div>
+                  </div>
+                )}
+
+                {isEnd && (
+                  <div className="h-56 md:h-72 flex items-center justify-center relative overflow-hidden rounded-t-2xl"
+                    style={{ background: nightMode ? 'linear-gradient(135deg, #FFD16622, #7FB06922)' : 'linear-gradient(135deg, #FFD16633, #7FB06933, #5DADE233)' }}>
+                    <div className="text-center px-6">
+                      <motion.div className="text-5xl mb-3" animate={{ scale: [1, 1.15, 1] }} transition={{ duration: 2, repeat: Infinity }}>
+                        🌟
+                      </motion.div>
+                      <h2 className={`font-display font-bold text-xl ${nightMode ? 'text-cream' : 'text-text'}`}>The End</h2>
+                      <p className={`font-body text-sm mt-1 ${nightMode ? 'text-cream/60' : 'text-text-muted'}`}>You are braver than you know.</p>
+                    </div>
+                  </div>
+                )}
+
+                {pageData && <SceneIllustration page={pageData} nightMode={nightMode} />}
+
+                {/* Text area */}
+                <div className="p-6">
+                  {pageData && (
+                    <p className={`font-body text-lg leading-relaxed ${nightMode ? 'text-cream/90' : 'text-text'}`}>
+                      {pageData.text}
+                    </p>
+                  )}
+                  {isEnd && story.aboutTheCondition && (
+                    <div className="mt-4 space-y-3">
+                      <div className="spark-card p-4">
+                        <h3 className="font-display font-semibold text-sm text-ember mb-1">For Kids</h3>
+                        <p className="font-body text-sm text-text">{story.aboutTheCondition.forKids}</p>
+                      </div>
+                      <div className="spark-card p-4">
+                        <h3 className="font-display font-semibold text-sm text-dream mb-1">For Parents</h3>
+                        <p className="font-body text-sm text-text">{story.aboutTheCondition.forParents}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Navigation */}
+          <div className="flex items-center justify-between mb-4">
+            <button onClick={() => goPage(-1)} disabled={currentPage === 0}
+              className="btn-spark btn-secondary text-sm disabled:opacity-30 min-h-[48px]">
+              Previous
+            </button>
+            <span className={`font-display text-sm ${nightMode ? 'text-cream/50' : 'text-text-muted'}`}>
+              {currentPage + 1} / {totalPages}
+            </span>
+            <button onClick={() => goPage(1)} disabled={currentPage === totalPages - 1}
+              className="btn-spark btn-primary text-sm disabled:opacity-30 min-h-[48px]">
+              Next
             </button>
           </div>
-        </div>
 
-        {/* Page display with 3D perspective page turn */}
-        <AnimatePresence mode="wait">
-          <motion.div key={currentPage}
-            initial={{ opacity: 0, rotateY: 15, x: 40 }}
-            animate={{ opacity: 1, rotateY: 0, x: 0 }}
-            exit={{ opacity: 0, rotateY: -15, x: -40 }}
-            transition={{ duration: 0.4, ease: 'easeOut' }}
-            style={{ perspective: 800, transformStyle: 'preserve-3d' }}
-            className="rounded-3xl overflow-hidden shadow-xl mb-6"
-          >
-            <div style={{ background: nightMode ? '#2A2438' : 'white' }}>
-              {/* Illustration area */}
-              {isCover && (
-                <div className="h-64 flex items-center justify-center relative overflow-hidden"
-                  style={{ background: nightMode ? 'linear-gradient(135deg, #FF8C4222, #FFD16622)' : 'linear-gradient(135deg, #FF8C4233, #FFD16633, #FF6B8A22)' }}>
-                  <div className="text-center px-6">
-                    <motion.div className="text-6xl mb-3" animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 3, repeat: Infinity }}>
-                      📖✨
-                    </motion.div>
-                    <h1 className={`font-display font-bold text-2xl ${nightMode ? 'text-cream' : 'text-text'}`}>{story.title}</h1>
-                    <p className={`font-body text-sm mt-2 italic ${nightMode ? 'text-cream/60' : 'text-text-muted'}`}>{story.dedication}</p>
-                  </div>
-                </div>
-              )}
-
-              {isEnd && (
-                <div className="h-64 flex items-center justify-center relative overflow-hidden"
-                  style={{ background: nightMode ? 'linear-gradient(135deg, #FFD16622, #7FB06922)' : 'linear-gradient(135deg, #FFD16633, #7FB06933, #5DADE233)' }}>
-                  <div className="text-center px-6">
-                    <motion.div className="text-5xl mb-3" animate={{ scale: [1, 1.15, 1] }} transition={{ duration: 2, repeat: Infinity }}>
-                      🌟
-                    </motion.div>
-                    <h2 className={`font-display font-bold text-xl ${nightMode ? 'text-cream' : 'text-text'}`}>The End</h2>
-                    <p className={`font-body text-sm mt-1 ${nightMode ? 'text-cream/60' : 'text-text-muted'}`}>You are braver than you know.</p>
-                  </div>
-                </div>
-              )}
-
-              {pageData && <StoryIllustration page={pageData} nightMode={nightMode} />}
-
-              {/* Text area */}
-              <div className="p-6">
-                {pageData && (
-                  <p className={`font-body text-lg leading-relaxed ${nightMode ? 'text-cream/90' : 'text-text'}`}>
-                    {pageData.text}
-                  </p>
-                )}
-                {isEnd && story.aboutTheCondition && (
-                  <div className="mt-4 space-y-3">
-                    <div className="spark-card p-4">
-                      <h3 className="font-display font-semibold text-sm text-ember mb-1">For Kids</h3>
-                      <p className="font-body text-sm text-text">{story.aboutTheCondition.forKids}</p>
-                    </div>
-                    <div className="spark-card p-4">
-                      <h3 className="font-display font-semibold text-sm text-dream mb-1">For Parents</h3>
-                      <p className="font-body text-sm text-text">{story.aboutTheCondition.forParents}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Navigation */}
-        <div className="flex items-center justify-between mb-4">
-          <button onClick={() => goPage(-1)} disabled={currentPage === 0}
-            className="btn-spark btn-secondary text-sm disabled:opacity-30 min-h-[48px]">
-            Previous
-          </button>
-          <span className={`font-display text-sm ${nightMode ? 'text-cream/50' : 'text-text-muted'}`}>
-            {currentPage + 1} / {totalPages}
-          </span>
-          <button onClick={() => goPage(1)} disabled={currentPage === totalPages - 1}
-            className="btn-spark btn-primary text-sm disabled:opacity-30 min-h-[48px]">
-            Next
-          </button>
-        </div>
-
-        {/* Dots */}
-        <div className="flex justify-center gap-1.5 flex-wrap">
-          {Array.from({ length: totalPages }).map((_, i) => (
-            <button key={i} onClick={() => { setCurrentPage(i); if (i === totalPages - 1) handleFinishReading(); }}
-              className={`w-2.5 h-2.5 rounded-full transition-all ${i === currentPage ? 'bg-ember scale-125' : nightMode ? 'bg-spark/20' : 'bg-spark/40'}`} />
-          ))}
+          {/* Dots */}
+          <div className="flex justify-center gap-1.5 flex-wrap">
+            {Array.from({ length: totalPages }).map((_, i) => (
+              <button key={i} onClick={() => { setCurrentPage(i); if (i === totalPages - 1) handleFinishReading(); }}
+                className={`w-2.5 h-2.5 rounded-full transition-all ${i === currentPage ? 'bg-ember scale-125' : nightMode ? 'bg-spark/20' : 'bg-spark/40'}`} />
+            ))}
+          </div>
         </div>
       </div>
       <BottomNav />

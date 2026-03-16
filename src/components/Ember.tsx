@@ -72,7 +72,7 @@ export function SparkBurst({ active }: { active: boolean }) {
   );
 }
 
-/* ---- Bottom Navigation ---- */
+/* ---- Bottom Navigation — Responsive ---- */
 export function BottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-lg border-t border-spark/20 px-2 py-2 no-print">
@@ -87,10 +87,10 @@ export function BottomNav() {
           <a
             key={item.href}
             href={item.href}
-            className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl hover:bg-spark/10 transition-colors min-w-[56px]"
+            className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl hover:bg-spark/10 transition-colors min-w-[56px] md:min-w-[72px] lg:min-w-[80px]"
           >
-            <span className="text-xl">{item.emoji}</span>
-            <span className="text-[10px] font-display font-medium text-text-light">{item.label}</span>
+            <span className="text-xl md:text-2xl lg:text-2xl">{item.emoji}</span>
+            <span className="text-[10px] md:text-xs lg:text-sm font-display font-medium text-text-light">{item.label}</span>
           </a>
         ))}
       </div>

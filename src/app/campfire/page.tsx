@@ -30,7 +30,7 @@ export default function CampfirePage() {
 
   return (
     <div className="min-h-screen pb-24" style={{ background: 'linear-gradient(180deg, #1A1428 0%, #2D1F3D 40%, #3D2515 70%, #FF8C4233 100%)' }}>
-      <div className="max-w-lg mx-auto px-4 py-6">
+      <div className="spark-container py-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           {/* Campfire scene */}
           <div className="text-center mb-8 pt-4">

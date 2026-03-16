@@ -134,7 +134,7 @@ export default function AvatarPage() {
   return (
     <div className="min-h-screen bg-cream pb-24">
       <SparkBurst active={showBurst} />
-      <div className="max-w-lg mx-auto px-4 py-6">
+      <div className="spark-container py-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="text-3xl font-display font-bold text-center mb-1 bg-gradient-to-r from-dream to-brave bg-clip-text text-transparent">
             My Avatar
